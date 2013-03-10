@@ -62,46 +62,46 @@ bool ConfigParseToConsole::Attach(const std::string& name, bool isFile)
 
 Parser* ConfigParseToConsole::Build()
 {	try
-	{	// add Parser's main parts
-		pToker = new Toker;
-		pToker->returnComments();
-		pSemi = new SemiExp(pToker);
-		pParser = new Parser(pSemi);
-		pRepo = new Repository(pToker);
-		// add code folding rules
-		pFR = new codeFoldingRules;
-		pParser->addFoldingRules(pFR);
-		// configure to manage scope
-		// these must come first - they return true on match
-		// so rule checking continues
-		pBeginningOfScope = new BeginningOfScope();		pHandlePush = new HandlePush(pRepo);
-		pBeginningOfScope->addAction(pHandlePush);		pParser->addRule(pBeginningOfScope);
-		pEndOfScope = new EndOfScope();		pHandlePop = new HandlePop(pRepo);
-		pEndOfScope->addAction(pHandlePop);		pParser->addRule(pEndOfScope);
-		pPreprocStatement = new PreprocStatement();		pPrintPreproc = new PrintPreproc();
-		pPreprocStatement->addAction(pPrintPreproc);		pParser->addRule(pPreprocStatement);
+{	// add Parser's main parts
+	pToker = new Toker;
+	pToker->returnComments();
+	pSemi = new SemiExp(pToker);
+	pParser = new Parser(pSemi);
+	pRepo = new Repository(pToker);
+	// add code folding rules
+	pFR = new codeFoldingRules;
+	pParser->addFoldingRules(pFR);
+	// configure to manage scope
+	// these must come first - they return true on match
+	// so rule checking continues
+	pBeginningOfScope = new BeginningOfScope();		pHandlePush = new HandlePush(pRepo);
+	pBeginningOfScope->addAction(pHandlePush);		pParser->addRule(pBeginningOfScope);
+	pEndOfScope = new EndOfScope();		pHandlePop = new HandlePop(pRepo);
+	pEndOfScope->addAction(pHandlePop);		pParser->addRule(pEndOfScope);
+	pPreprocStatement = new PreprocStatement();		pPrintPreproc = new PrintPreproc();
+	pPreprocStatement->addAction(pPrintPreproc);		pParser->addRule(pPreprocStatement);
 
-		// configure to detect and act on user-defined type definitions
-		// these will stop further rule checking by returning false
-		pClassDefinition = new ClassDefinition;		pPushClass = new PushClass(pRepo); 
-		pClassDefinition->addAction(pPushClass);		pParser->addRule(pClassDefinition);
-		pEnumStatement = new EnumStatement();		pPrintEnum = new PrintEnum();		
-		pEnumStatement->addAction(pPrintEnum);		pParser->addRule(pEnumStatement);
-		pFunctionDefinition = new FunctionDefinition;		pPushFunction = new PushFunction(pRepo);  
-		pFunctionDefinition->addAction(pPushFunction);		pParser->addRule(pFunctionDefinition);
-		pStructDefinition = new StructDefinition;		pPushStruct = new PushStruct(pRepo);  
-		pStructDefinition->addAction(pPushStruct);		pParser->addRule(pStructDefinition);
-		pTypedefStatement = new TypedefStatement();		pPrintTypedef = new PrintTypedef();
-		pTypedefStatement->addAction(pPrintTypedef);		pParser->addRule(pTypedefStatement);
-		pUnionDefinition = new UnionDefinition;		pPushUnion = new PushUnion(pRepo);  
-		pUnionDefinition->addAction(pPushUnion);		pParser->addRule(pUnionDefinition);
-		return pParser;
-	}
-	catch(std::exception& ex)
-	{
-		std::cout << "\n\n  " << ex.what() << "\n\n";
-		return 0;
-	}
+	// configure to detect and act on user-defined type definitions
+	// these will stop further rule checking by returning false
+	pClassDefinition = new ClassDefinition;		pPushClass = new PushClass(pRepo); 
+	pClassDefinition->addAction(pPushClass);		pParser->addRule(pClassDefinition);
+	pEnumStatement = new EnumStatement();		pPrintEnum = new PrintEnum();		
+	pEnumStatement->addAction(pPrintEnum);		pParser->addRule(pEnumStatement);
+	pFunctionDefinition = new FunctionDefinition;		pPushFunction = new PushFunction(pRepo);  
+	pFunctionDefinition->addAction(pPushFunction);		pParser->addRule(pFunctionDefinition);
+	pStructDefinition = new StructDefinition;		pPushStruct = new PushStruct(pRepo);  
+	pStructDefinition->addAction(pPushStruct);		pParser->addRule(pStructDefinition);
+	pTypedefStatement = new TypedefStatement();		pPrintTypedef = new PrintTypedef();
+	pTypedefStatement->addAction(pPrintTypedef);		pParser->addRule(pTypedefStatement);
+	pUnionDefinition = new UnionDefinition;		pPushUnion = new PushUnion(pRepo);  
+	pUnionDefinition->addAction(pPushUnion);		pParser->addRule(pUnionDefinition);
+	return pParser;
+}
+catch(std::exception& ex)
+{
+	std::cout << "\n\n  " << ex.what() << "\n\n";
+	return 0;
+}
 }
 
 #ifdef TEST_CONFIGUREPARSER

@@ -3,7 +3,7 @@
 // Ver 2.0                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Dell E6510, Windows 7                        //
-// Application: CSE687 - OOD, Pr#1, Spring 2013              //
+// Application: CSE687 - OOD, Pr#2, Spring 2013              //
 // Author:      Matt Synborski                               //
 //              matthewsynborski@gmail.com                   //
 ///////////////////////////////////////////////////////////////

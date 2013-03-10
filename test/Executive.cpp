@@ -60,7 +60,8 @@ ver 2.0 : 12 Feb 13
 #include "FileSystem.h"
 #include "GraphXml.h"
 
-typedef DisplayXml<std::string, std::string> displayXml;
+typedef Display<node, std::string> display;
+typedef GraphXml<node, std::string> graphXml;
 
 #ifdef TEST_EXEC
 
@@ -82,8 +83,8 @@ void readGraphXmlFile(std::string filename)
 		xmlFile.close();
 	}
 	XmlReader rdr(infile);
-	g = displayXml::readXml(rdr);
-	displayXml::show(g);
+	g = graphXml::readXml(rdr);
+	display::show(g);
 }
 
 
@@ -94,7 +95,7 @@ void printOutGraph()
 	graph g;
 	g = s->getGraph();
 	
-	displayXml::printPrettyGraph(g);
+	graphXml::printPrettyGraph(g);
 }
 
 void writeGraphXmlFile()
@@ -103,7 +104,7 @@ void writeGraphXmlFile()
 	s = GraphSingleton::getInstance();
 	graph g;
 	g = s->getGraph();
-	displayXml::writeXml("out.xml",g);
+	graphXml::writeXml("out.xml",g);
 }
 
 void printBanner()
@@ -196,7 +197,7 @@ void processAFolderPass1(int argc, char* argv[], bool isRecursive, std::vector<s
 				std::cout << "\n\n  Parser not built\n\n";
 
 			}
-			//std::cout << "\n Parsing file: " << *iterTxt << "\n";
+			std::cout << "\n Parsing file: " << *iterTxt << "\n";
 			while(pParser->next())
 				pParser->parse();
 		}

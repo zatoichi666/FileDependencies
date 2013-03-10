@@ -17,6 +17,12 @@
 // GraphXml shall(3) provide the Tarjan algorithm            //
 // on graph instances.                                       //
 //                                                           //
+// GraphXml shall(4) perform a topological sort on strongly  //
+// connected components.                                     //
+//                                                           //
+// GraphXml shall(5) condense the sorted (4) SCCs into a     //
+// new directed graph                                        //
+//                                                           //
 ///////////////////////////////////////////////////////////////
 
 #ifndef GRAPHXML_H
@@ -80,9 +86,6 @@ struct node
 	}
 };
 
-
-
-
 template<typename V, typename E> 
 class GraphXml : public Graph<V,E> 
 {
@@ -91,7 +94,15 @@ class GraphXml : public Graph<V,E>
 	typedef std::pair<std::string,std::string> edge;
 
 private:
-	static void AddVertexToGraph(std::string vertValue, size_t vert_id, graph& g )
+
+	static size_t whichSCC( std::vector<std::vector<vertex>> stronglyConnectedComponents, vertex& vert )
+	{
+		for (size_t i =0;i< stronglyConnectedComponents.size() ; i++)	
+			for (size_t j=0;j< stronglyConnectedComponents[i].size(); j++)
+				if (stronglyConnectedComponents[i][j].value().payload == vert.value().payload)
+					return i;
+	}
+	static void AddVertexToGraph(const std::string& vertValue, const size_t& vert_id, graph &g )
 	{
 		int match = -1;
 		for (auto v:g)	{
@@ -106,6 +117,69 @@ private:
 	}
 
 public:
+	static graph condensedGraph(std::vector<std::vector<vertex>>& stronglyConnectedComponents, graph& fullGraph )
+	{
+		graph condensedGraph;
+		graph::iterator iter = fullGraph.begin();
+		while(iter != fullGraph.end())
+		{
+			vertex v = *iter;
+			std::string t1 = v.value().payload;
+			size_t indexSCC = whichSCC(stronglyConnectedComponents, v);
+			for(size_t i=0; i<v.size(); ++i)
+			{
+				vertex::Edge edge = v[i];
+				AddVertexToGraph(collapseSccIntoString(stronglyConnectedComponents[indexSCC]), indexSCC, condensedGraph);
+				size_t indexSCCchild = whichSCC(stronglyConnectedComponents, fullGraph[edge.first]);
+				if (indexSCC != indexSCCchild )
+				{
+					AddVertexToGraph(collapseSccIntoString(stronglyConnectedComponents[indexSCCchild]), indexSCCchild, condensedGraph);
+					vertex vertParent = condensedGraph[condensedGraph.findVertexIndexById(indexSCC)];
+					vertex vertChild = condensedGraph[condensedGraph.findVertexIndexById(indexSCCchild)];
+					bool edgeExist = doesEdgeExistAlready(indexSCC, indexSCCchild, condensedGraph);
+
+					if (!edgeExist)
+						condensedGraph.addEdge("relationship", vertParent, vertChild );					
+				}
+			}						
+			++iter;
+		}
+		return condensedGraph;
+	}
+
+	static bool doesEdgeExistAlready(size_t parentId, size_t childId, graph& g)
+	{
+		std::vector<size_t> idVector;
+		graph::iterator iter = g.begin();
+		while(iter != g.end())
+		{
+			vertex v = *iter;
+			std::string parent;
+			parent = v.value().payload;
+			for(size_t i=0; i<v.size(); ++i)
+			{
+				vertex::Edge edge = v[i];
+				std::string child = g[edge.first].value().payload;
+				std::string relationship = (edge.second);				
+				if ((v.id() == parentId) && (g[edge.first].id() == childId))
+				{
+					return true;
+				}
+			}
+			++iter;
+		}
+		return false;
+	}
+
+	static std::string collapseSccIntoString(std::vector<vertex> stronglyConnectedComponent)
+	{
+		std::string collapsedString;
+		for (int i=0;i<stronglyConnectedComponent.size();i++)
+			collapsedString = collapsedString + stronglyConnectedComponent[i].value().payload + ";";
+		
+		return collapsedString;
+	}
+
 	static graph readXml(XmlReader rdr) // implements GraphXml shall(2)
 	{
 		rdr.reset();
@@ -158,14 +232,14 @@ public:
 		{
 			vertex v = *iter;
 			std::string parent;
-			parent = v.value();
+			parent = v.value().payload;
 
 			std::cout << std::setw(30) << parent << "\n";
 			for(size_t i=0; i<v.size(); ++i)
 			{
 				vertex::Edge edge = v[i];
-				std::string child = g[edge.first].value().c_str();
-				std::string relationship = (edge.second).c_str();
+				std::string child = g[edge.first].value().payload;
+				std::string relationship = (edge.second);
 
 				if (relationship == "uses")
 					relationship = "--------uses------>";
@@ -187,10 +261,7 @@ public:
 			}
 			++iter;
 		}
-
 	}
-
-
 
 	static void writeXml(std::string filename, graph g) // implements GraphXml shall(1)
 	{
@@ -198,7 +269,6 @@ public:
 		wtr.addDeclaration();
 		wtr.addComment("Matthew Synborski");
 		wtr.start("graph");
-
 		graph::iterator iter = g.begin();
 		while(iter != g.end())
 		{
@@ -210,7 +280,6 @@ public:
 			vertXml.addAttribute("id",t1 );
 			t1 = v.value().payload;
 			vertXml.addAttribute("value",t1);
-
 			for(size_t i=0; i<v.size(); ++i)
 			{
 				vertex::Edge edge = v[i];
@@ -223,7 +292,6 @@ public:
 				t1 = std::to_string(g[edge.first].id());
 				edgeXml.addAttribute("id",t1 );
 				vertXml.addBody(edgeXml.xml());			
-
 			}
 			vertXml.end();
 			wtr.addBody(vertXml.xml());
@@ -239,7 +307,6 @@ public:
 	}
 };
 
-
 template<typename V, typename E> 
 class TarjanAlgorithm : public Graph<V,E> 
 {
@@ -250,6 +317,8 @@ class TarjanAlgorithm : public Graph<V,E>
 	std::vector<vertex> Stk;
 	std::vector<std::vector<vertex>> stronglyConnectedComponents;
 	graph dg;
+
+
 
 	void strongConnect(vertex v)
 	{
@@ -300,6 +369,11 @@ class TarjanAlgorithm : public Graph<V,E>
 	}
 
 public:
+	std::vector<std::vector<vertex>> getSCC()
+	{
+		return stronglyConnectedComponents;
+	}
+
 	std::vector<std::vector<vertex>> tarjan(graph g)
 	{
 		stronglyConnectedComponents.clear();
@@ -309,12 +383,13 @@ public:
 		for (auto vert: dg)
 		{
 			if (vert.value().index == SIZE_MAX)
-			{
-				strongConnect(vert);
-			}
+				strongConnect(vert);			
 		}
 		return stronglyConnectedComponents;
 	}
+
+
+
 };
 
 #endif

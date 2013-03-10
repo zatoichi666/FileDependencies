@@ -3,7 +3,7 @@
 // Ver 1.0                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Dell E6510, Windows 7                        //
-// Application: CSE687 - OOD, Pr#1, Spring 2013              //
+// Application: CSE687 - OOD, Pr#2, Spring 2013              //
 // Author:      Matt Synborski                               //
 //              matthewsynborski@gmail.com                   //
 ///////////////////////////////////////////////////////////////
@@ -20,8 +20,10 @@
 #include "Graph.h"
 #include "GraphXml.h"
 
-typedef GraphLib::Graph<std::string, std::string> graph;
-typedef GraphLib::Vertex<std::string, std::string> vertex;
+using namespace GraphLib;
+
+typedef Graph<node, std::string> graph;
+typedef Vertex<node, std::string> vertex;
 
 class GraphSingleton : public graph  // implements GraphSingleton shall(1)
 {
@@ -69,7 +71,7 @@ public:
 			if (vert.value() == value)
 			{
 				idVert = vert.id();
-				std::cout << "Found vertex with id: " << vert.id() << " and value: " << vert.value() << "\n";
+				std::cout << "Found vertex with id: " << vert.id() << " and value: " << vert.value().payload << "\n";
 				idVector.push_back(vert.id());
 			}
 		}
@@ -87,15 +89,15 @@ public:
 		{
 			vertex v = *iter;
 			std::string parent;
-			parent = v.value();
+			parent = v.value().payload;
 			for(size_t i=0; i<v.size(); ++i)
 			{
 				vertex::Edge edge = v[i];
-				std::string child = g[edge.first].value().c_str();
-				std::string relationship = (edge.second).c_str();
+				std::string child = g[edge.first].value().payload;
+				std::string relationship = (edge.second);
 				if (relationship == value)
 				{
-					std::cout << "Found edge with value: " << relationship << " to: " << g[edge.first].value() << " from: " << v.value() << "\n";
+					std::cout << "Found edge with value: " << relationship << " to: " << g[edge.first].value().payload << " from: " << v.value().payload << "\n";
 				}
 			}
 			++iter;
@@ -117,7 +119,7 @@ public:
 		if (foundVert == false)
 		{
 			vertex vv1(vertName,-1);
-			//std::cout << "  Adding " << vertName << " to graph\n";
+			std::cout << "  Can't find " << vertName << " Adding it to graph\n";
 			single->addVertex(vv1);
 			idVert = vv1.id();
 		}
@@ -158,6 +160,7 @@ public:
 		}
 		if (foundChild == false)
 		{
+			
 			idChild = s->addTypeToGraph(childName);
 
 		}

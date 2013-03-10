@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////
-// GraphXml.h - Graph Library                                //
+// GraphXml.cpp - Graph Library                                //
 // Ver 2.0                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Dell E6510, Windows 7                        //
@@ -16,6 +16,12 @@
 //                                                           //
 // GraphXml shall(3) provide the Tarjan algorithm            //
 // on graph instances.                                       //
+//                                                           //
+// GraphXml shall(4) perform a topological sort on strongly  //
+// connected components.                                     //
+//                                                           //
+// GraphXml shall(5) condense the sorted (4) SCCs into a     //
+// new directed graph                                        //
 //                                                           //
 ///////////////////////////////////////////////////////////////
 
@@ -36,6 +42,8 @@ typedef Vertex<node, std::string> vertex;
 typedef Display<node, std::string> display;
 typedef GraphXml<node, std::string> graphXml;
 typedef TarjanAlgorithm<node, std::string> tarjanAlgorithm;
+
+
 
 template<typename V, typename E>
 void showVert(Vertex<V,E>& v)
@@ -132,16 +140,32 @@ int main()
 	std::cout << "\n\n Testing GraphXml shall(3) provide the Tarjan algorithm \n";
 	std::cout << " on graph instances.  ";       
 	std::cout << "\n\n Expected result: 3 strongly connected components.\n";
-	std::cout << "----------------------------------\n";
+	std::cout << "---------------------------------------------------\n";
 	
+	tarjanAlgorithm tarjObj;
 
-	tarjanAlgorithm g2;
+	std::cout << " Actual result: " << tarjObj.tarjan(gGraph).size() << " strongly connected components.\n";	
 
-	std::cout << " Actual result: " << g2.tarjan(gGraph).size() << " strongly connected components.\n";	
-
+	std::cout << "\n\n Testing GraphXml shall(4) perform a topological sort on strongly connected components. \n";
+	std::cout << " GraphXml shall(5) condense the sorted (4) SCCs into a new directed graph \n";
 	
+	std::cout << "\n Expected result: non-cyclic graph\n";
+	std::cout << " 1 -> 0\n";
+	std::cout << " 2 -> 1\n";
+	std::cout << " 2 -> 0\n";
+	
+	std::cout << " Demonstrating condensedGraph()\n";
+	std::cout << "--------------------------------\n";
+	graph g3 = graphXml::condensedGraph(tarjObj.getSCC(),gGraph);
 
-	getchar();
+	display::show(g3);
+
+	std::cout << "\n\n Demonstrating collapseSccIntoString()\n";
+	std::cout << "---------------------------------------\n";
+	std::cout << "  SCC 0: " << graphXml::collapseSccIntoString( tarjObj.getSCC()[0] ) << "\n";
+	std::cout << "  SCC 1: " << graphXml::collapseSccIntoString( tarjObj.getSCC()[1] ) << "\n";
+	std::cout << "  SCC 2: " << graphXml::collapseSccIntoString( tarjObj.getSCC()[2] ) << "\n";
+
 	return 0;
 }
 

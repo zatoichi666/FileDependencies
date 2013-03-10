@@ -2,10 +2,10 @@
 #define ACTIONSANDRULES_H
 ///////////////////////////////////////////////////////////////
 // ActionsAndRules.h - Graph Library                          //
-// Ver 1.0                                                   //
+// Ver 2.0                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Dell E6510, Windows 7                        //
-// Application: CSE687 - OOD, Pr#1, Spring 2013              //
+// Application: CSE687 - OOD, Pr#2, Spring 2013              //
 // Author:      Matt Synborski                               //
 //              matthewsynborski@gmail.com                   //
 ///////////////////////////////////////////////////////////////
@@ -33,7 +33,7 @@ Action1 a1;                     // create a derived action
 r1.addAction(&a1);              // register action with the rule
 parser.addRule(&r1);            // register rule with parser
 while(se.getSemiExp())          // get semi-expression
-parser.parse();               //   and parse it
+parser.parse();                 // and parse it
 
 Build Process:
 ==============
@@ -59,14 +59,6 @@ ver 1.0 : 12 Jan 06
 */
 //
 
-/*
-TODO: 
-1. Figure out what scope I'm in when I hit a type of the below rules.  Print it out 
-2. Resolve specific indexing, rules should check for presence of tokens and order of appearance.
-3. Inheritance logic complete
-4. Using logic improvement
-*/
-
 #include <queue>
 #include <string>
 #include <sstream>
@@ -78,13 +70,12 @@ TODO:
 #include "ScopeStack.h"
 #include "Tokenizer.h"
 #include "SemiExpression.h"
-
 #include "GraphSingleton.h"
 
 using namespace GraphLib;
 
-typedef GraphLib::Graph<std::string, std::string> graph;
-typedef GraphLib::Vertex<std::string, std::string> vertex;
+typedef GraphLib::Graph<node, std::string> graph;
+typedef GraphLib::Vertex<node, std::string> vertex;
 
 ///////////////////////////////////////////////////////////////
 // ScopeStack element is application specific
@@ -254,8 +245,7 @@ public:
 
 ///////////////////////////////////////////////////////////////
 // action to print Composition relationship to console
-///////////////////////////////////////////////////////////////
-// If there are scope resolution operators, the last one precedes the datatype
+
 class PrintComposition : public IAction
 {
 	Repository* p_Repos;
@@ -359,14 +349,21 @@ public:
 
 		if(p_Repos->scopeStack().size() == 0)
 			return;
-		element elem = p_Repos->scopeStack().pop();
-		p_Repos->scopeStack().push(elem);  // leaves the scopestack uneffected
+		//back up the scopestack
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+
 		
+		element elem = p_Repos->scopeStack().pop();
+		while (elem.type != "class")
+		{
+			elem = p_Repos->scopeStack().pop();
+		}
+
 		if(elem.type == "class")
 		{
 			ITokCollection& tc = *pTc;
 			size_t keyPosUsing = tc.find("*") > tc.find("&") ? tc.find("&") : tc.find("*");
-			//std::cout << "\n  Relationship: " << elem.name << " uses " << tc[keyPosUsing - 1];
+			std::cout << "\n  Relationship: " << elem.name << " uses " << tc[keyPosUsing - 1];
 
 			GraphSingleton *s;
 			s = GraphSingleton::getInstance();
@@ -375,6 +372,8 @@ public:
 				s->addRelationshipToGraph(elem.name, tc[keyPosUsing - 1], "uses");
 
 		}
+		p_Repos->scopeStack() = tempStack;
+
 	}
 
 };
@@ -445,7 +444,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
-// rule to detect preprocessor statements
+// rule to detect aggregation relationship
 
 class AggregationOpportunity : public IRule
 {
@@ -528,7 +527,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
-// rule to detect typedef statements
+// rule to detect enum statements
 
 class EnumStatement : public IRule
 {
@@ -546,7 +545,7 @@ public:
 };
 
 ///////////////////////////////////////////////////////////////
-// action to print preprocessor statement to console
+// action to print enum statement to console
 
 class PrintEnum : public IAction
 {
@@ -625,29 +624,53 @@ public:
 class TypedefStatement : public IRule
 {
 public:
+
+	bool isStdDatatype(const std::string& tok)
+	{
+		const static std::string keys[]
+		= {  "ios", "ios_base", "istream", "iostream", "ostream","streambuf", "ifstream", "fstream", 
+			"ofstream", "filebuf", "bool", "char", "int", "float", "double", "void", "wchar_t", 
+			"long", "string", "short"
+		};
+		for(int i=0; i<20; ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+
 	bool doTest(ITokCollection*& pTc)
 	{
 
-		if(pTc->find("typedef") < pTc->length() && !(pTc->find("enum")))
-		{
-			doActions(pTc);
-			return true;
+		if((pTc->find("typedef") < pTc->length()) && (pTc->find("enum") == pTc->length()))
+		{			
+			ITokCollection& tc = *pTc;
+			size_t posTypedefType = tc.find("typedef") + 1;
+
+			if (!isStdDatatype(tc[posTypedefType]))
+			{
+				doActions(pTc);
+				return true;
+			}
 		}
 		return false;
 	}
 };
 
 ///////////////////////////////////////////////////////////////
-// action to print preprocessor statement to console
+// action to print typedef statement to console
 
 class PrintTypedef : public IAction
 {
 public:
+
 	void doAction(ITokCollection*& pTc)
 	{
 		ITokCollection& tc = *pTc;
-		size_t len = tc.find("typedef");
-		std::cout << "\n  Type detected: Typedef: " << tc[len + 2];
+		size_t posTypedef = tc.find(";") -1;	
+		GraphSingleton *s;
+		s = GraphSingleton::getInstance();
+		std::cout << " \nTypedef detected, adding via pass 1: " << tc[posTypedef] << "\n";
+		s->addTypeToGraph(tc[posTypedef]);
 
 	}
 };
@@ -882,7 +905,7 @@ public:
 
 
 ///////////////////////////////////////////////////////////////
-// rule to detect struct definitions
+// rule to detect union definitions
 
 class UnionDefinition : public IRule
 {
