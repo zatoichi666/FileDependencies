@@ -49,6 +49,8 @@ ConfigParseToConsole::~ConfigParseToConsole()
 	delete pParser;
 	delete pSemi;
 	delete pToker;
+	delete pVarDeclaration;
+	delete pPushVarDecl;
 }
 //----< attach toker to a file stream or stringstream >------------
 
@@ -64,8 +66,9 @@ Parser* ConfigParseToConsole::Build()
 {	try
 {	// add Parser's main parts
 	pToker = new Toker;
-	pToker->returnComments();
+	pToker->returnComments(false);
 	pSemi = new SemiExp(pToker);
+	pSemi->returnNewLines(false);
 	pParser = new Parser(pSemi);
 	pRepo = new Repository(pToker);
 	// add code folding rules
@@ -95,6 +98,11 @@ Parser* ConfigParseToConsole::Build()
 	pTypedefStatement->addAction(pPrintTypedef);		pParser->addRule(pTypedefStatement);
 	pUnionDefinition = new UnionDefinition;		pPushUnion = new PushUnion(pRepo);  
 	pUnionDefinition->addAction(pPushUnion);		pParser->addRule(pUnionDefinition);
+
+	//Project 2 configurations
+	pVarDeclaration = new VarDeclaration;		pPushVarDecl = new PushVarDecl(pRepo);  
+	pVarDeclaration->addAction(pPushVarDecl);		pParser->addRule(pVarDeclaration);
+	
 	return pParser;
 }
 catch(std::exception& ex)

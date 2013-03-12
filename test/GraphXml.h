@@ -97,10 +97,13 @@ private:
 
 	static size_t whichSCC( std::vector<std::vector<vertex>> stronglyConnectedComponents, vertex& vert )
 	{
+		size_t indexSCC;
 		for (size_t i =0;i< stronglyConnectedComponents.size() ; i++)	
 			for (size_t j=0;j< stronglyConnectedComponents[i].size(); j++)
 				if (stronglyConnectedComponents[i][j].value().payload == vert.value().payload)
-					return i;
+					indexSCC = i;
+
+		return indexSCC;
 	}
 	static void AddVertexToGraph(const std::string& vertValue, const size_t& vert_id, graph &g )
 	{
@@ -174,9 +177,9 @@ public:
 	static std::string collapseSccIntoString(std::vector<vertex> stronglyConnectedComponent)
 	{
 		std::string collapsedString;
-		for (int i=0;i<stronglyConnectedComponent.size();i++)
+		for (size_t i=0;i<stronglyConnectedComponent.size();i++)
 			collapsedString = collapsedString + stronglyConnectedComponent[i].value().payload + ";";
-		
+
 		return collapsedString;
 	}
 

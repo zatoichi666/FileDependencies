@@ -110,6 +110,11 @@ private:
 	UnionDefinition* pUnionDefinition;
 	PushUnion* pPushUnion;
 
+	// Project 2 rules
+
+	VarDeclaration* pVarDeclaration;
+	PushVarDecl* pPushVarDecl;
+
 	// prohibit copies and assignments
 
 	ConfigParseToConsole(const ConfigParseToConsole&);

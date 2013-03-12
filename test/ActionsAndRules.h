@@ -351,14 +351,11 @@ public:
 			return;
 		//back up the scopestack
 		ScopeStack<element> tempStack = p_Repos->scopeStack();
-
-		
 		element elem = p_Repos->scopeStack().pop();
-		while (elem.type != "class")
+		while ((elem.type != "class") && (p_Repos->scopeStack().size() > 0))
 		{
 			elem = p_Repos->scopeStack().pop();
 		}
-
 		if(elem.type == "class")
 		{
 			ITokCollection& tc = *pTc;
@@ -630,9 +627,9 @@ public:
 		const static std::string keys[]
 		= {  "ios", "ios_base", "istream", "iostream", "ostream","streambuf", "ifstream", "fstream", 
 			"ofstream", "filebuf", "bool", "char", "int", "float", "double", "void", "wchar_t", 
-			"long", "string", "short"
+			"long", "string", "iterator", "short"
 		};
-		for(int i=0; i<20; ++i)
+		for(int i=0; i<21; ++i)
 			if(tok == keys[i])
 				return true;
 		return false;
@@ -644,7 +641,7 @@ public:
 		if((pTc->find("typedef") < pTc->length()) && (pTc->find("enum") == pTc->length()))
 		{			
 			ITokCollection& tc = *pTc;
-			size_t posTypedefType = tc.find("typedef") + 1;
+			size_t posTypedefType = tc.find(";") - 1;
 
 			if (!isStdDatatype(tc[posTypedefType]))
 			{
@@ -999,6 +996,89 @@ public:
 	void doAction(ITokCollection*& pTc)
 	{
 		std::cout << "\n\n  FuncDef Stmt: " << pTc->show().c_str();
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// rule to detect variable declarations
+
+class VarDeclaration : public IRule
+{
+
+	bool isSpecialKeyWord(const std::string& tok)
+	{
+		const static std::string keys[]
+		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", "continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "operator", "private", "protected", "public", "register", "reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", "switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{"	};
+		for(int i=0; i<64; ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+
+	bool containsSpecialKeyword(ITokCollection& tc)
+	{
+		for (int i=0;i<(int)tc.length();i++)
+			if (isSpecialKeyWord(tc[i]))
+				return true;
+		return false;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("{");
+		if (tc.find("//") == tc.length())
+		{
+			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
+			{
+				//std::cout << "\n--VarDeclaration rule";
+				doActions(pTc);
+				return true;
+			}
+		}
+		return false;	
+	}
+
+};
+
+
+///////////////////////////////////////////////////////////////
+// action to push Variable Declaration name onto ScopeStack
+
+class PushVarDecl : public IAction
+{
+	Repository* p_Repos;
+
+
+public:
+	PushVarDecl(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+
+
+		std::string typeName = (*pTc)[0];
+		std::cout << "Found var decl: " << typeName << "\n";
+		/*
+		// pop anonymous scope
+		p_Repos->scopeStack().pop();
+
+		// push class/struct scope
+		std::string name = (*pTc)[pTc->find("union") + 1];
+		element elem;
+		elem.type = "union";
+		elem.name = name;
+		elem.lineCount = p_Repos->lineCount();
+		p_Repos->scopeStack().push(elem);
+
+		GraphSingleton *s;
+		s = GraphSingleton::getInstance();
+		s->addTypeToGraph(name);
+		*/
 	}
 };
 

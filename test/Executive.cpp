@@ -213,11 +213,12 @@ void processAFolderPass2(int argc, char* argv[], bool isRecursive, std::vector<s
 	ConfigParseToConsoleRelat configure;
 	Parser* pParser;
 	pParser = configure.Build();
-
+	
 	for(std::vector<std::string>::iterator iterTxt = fileList.begin();
 		iterTxt != fileList.end();
 		++iterTxt)
 	{
+		
 		try
 		{
 			if(pParser)
@@ -279,7 +280,11 @@ int main(int argc, char* argv[])
 		}
 		else {			
 			std::vector<std::string> fileList = getFileListToParse( argc, argv, false);
-			processAFolderPass1(argc, argv, false, fileList); processAFolderPass2(argc, argv, false, fileList);
+			
+			processAFolderPass1(argc, argv, false, fileList); 
+			
+			processAFolderPass2(argc, argv, false, fileList);
+			
 			printOutGraph();demonstrateGraphSearch();
 			Directory::setCurrentDirectory(direct);
 			writeGraphXmlFile();
