@@ -217,7 +217,7 @@ public:
 			"long", "<<", ">>", "enum", "struct", "class", "=", "unordered_map", "vector", "size_t",
 			"string", "list"
 		};
-		for (int i=0; i<39; ++i)
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
 			if(tok == keys[i])
 				return true;
 		return false;
@@ -307,7 +307,7 @@ public:
 			"ofstream", "filebuf", "bool", "char", "int", "float", "double", "void", "wchar_t", 
 			"long", "string"
 		};
-		for(int i=0; i<19; ++i)
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
 			if(tok == keys[i])
 				return true;
 		return false;
@@ -629,7 +629,7 @@ public:
 			"ofstream", "filebuf", "bool", "char", "int", "float", "double", "void", "wchar_t", 
 			"long", "string", "iterator", "short"
 		};
-		for(int i=0; i<21; ++i)
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
 			if(tok == keys[i])
 				return true;
 		return false;
@@ -1005,11 +1005,26 @@ public:
 class VarDeclaration : public IRule
 {
 
+	Repository* p_Repos;
+
+
+public:
+	VarDeclaration(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
 	bool isSpecialKeyWord(const std::string& tok)
 	{
 		const static std::string keys[]
-		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", "continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", "export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", "mutable", "namespace", "new", "operator", "private", "protected", "public", "register", "reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", "switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", "unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{"	};
-		for(int i=0; i<64; ++i)
+		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", 
+			"continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", 
+			"export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", 
+			"mutable", "namespace", "new", "operator", "private", "protected", "public", "register", 
+			"reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
+			"switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", 
+			"unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{", "#"	};
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
 			if(tok == keys[i])
 				return true;
 		return false;
@@ -1033,9 +1048,15 @@ public:
 		{
 			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
 			{
-				//std::cout << "\n--VarDeclaration rule";
-				doActions(pTc);
-				return true;
+				ScopeStack<element> tempStack = p_Repos->scopeStack();
+				if (tempStack.size() > 0)
+				{
+
+					//std::cout << "\n--VarDeclaration rule";
+					doActions(pTc);
+					return true;
+
+				}
 			}
 		}
 		return false;	
@@ -1059,10 +1080,113 @@ public:
 	}
 	void doAction(ITokCollection*& pTc)
 	{
-
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
 
 		std::string typeName = (*pTc)[0];
-		std::cout << "Found var decl: " << typeName << "\n";
+		std::cout << "  Found var decl: " << typeName << "\n";
+
+		/*
+		// push class/struct scope
+		std::string name = (*pTc)[pTc->find("union") + 1];
+		element elem;
+		elem.type = "union";
+		elem.name = name;
+		elem.lineCount = p_Repos->lineCount();
+		p_Repos->scopeStack().push(elem);
+
+		GraphSingleton *s;
+		s = GraphSingleton::getInstance();
+		s->addTypeToGraph(name);
+		*/
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// rule to detect global variable declarations
+
+class GlobalVarDeclaration : public IRule
+{
+	Repository* p_Repos;
+
+public:
+	GlobalVarDeclaration(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	bool isSpecialKeyWord(const std::string& tok)
+	{
+		const static std::string keys[]
+		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", 
+			"continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", 
+			"export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", 
+			"mutable", "namespace", "new", "operator", "private", "protected", "public", "register", 
+			"reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
+			"switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", 
+			"unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{", "#"	};
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+
+	bool containsSpecialKeyword(ITokCollection& tc)
+	{
+		for (int i=0;i<(int)tc.length();i++)
+			if (isSpecialKeyWord(tc[i]))
+				return true;
+		return false;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("{");
+		//if (tc.find("//") == tc.length())
+		{
+			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
+			{
+				ScopeStack<element> tempStack = p_Repos->scopeStack();
+				if (tempStack.size() == 0)
+				{
+					//std::cout << "\n--VarDeclaration rule";
+					doActions(pTc);
+					return true;
+				}
+			}
+		}
+		return false;	
+	}
+
+};
+
+
+///////////////////////////////////////////////////////////////
+// action to push Variable Declaration name onto ScopeStack
+
+class PushGlobalVarDecl : public IAction
+{
+	Repository* p_Repos;
+
+
+public:
+	PushGlobalVarDecl(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+
+		if (tempStack.size() == 0)
+		{
+
+			std::string typeName = (*pTc)[0];
+			std::cout << "  Found global var decl: " << typeName << "\n";
+
+		}
 		/*
 		// pop anonymous scope
 		p_Repos->scopeStack().pop();
@@ -1081,6 +1205,7 @@ public:
 		*/
 	}
 };
+
 
 ///////////////////////////////////////////////////////////////
 // action to send signature of a function def to console

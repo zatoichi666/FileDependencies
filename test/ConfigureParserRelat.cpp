@@ -38,9 +38,9 @@ ConfigParseToConsoleRelat::~ConfigParseToConsoleRelat()
 	delete pHandlePop;
 	delete pEndOfScope;
 
-	delete pCompositionOpportunity;
-	delete pUsingOpportunity;
-	delete pAggregationOpportunity;
+	//delete pCompositionOpportunity;
+	//delete pUsingOpportunity;
+	//delete pAggregationOpportunity;
 	delete pInheritanceOpportunity;
 
 	delete pClassDefinition;
@@ -52,6 +52,10 @@ ConfigParseToConsoleRelat::~ConfigParseToConsoleRelat()
 	delete pPushFunction;
 	delete pStructDefinition;
 	delete pStructScope;
+	delete pVarDeclaration;
+	delete pPushVarDecl;
+	delete pGlobalVarDeclaration;
+	delete pPushGlobalVarDecl;
 }
 //----< attach toker to a file stream or stringstream >------------
 
@@ -68,8 +72,9 @@ Parser* ConfigParseToConsoleRelat::Build()
 	try
 	{   // add Parser's main parts
 		pToker = new Toker;
-		pToker->returnComments();
+		pToker->returnComments(false);
 		pSemi = new SemiExp(pToker);
+		pSemi->returnNewLines(false);
 		pParser = new Parser(pSemi);
 		pRepo = new Repository(pToker);
 
@@ -97,19 +102,25 @@ Parser* ConfigParseToConsoleRelat::Build()
 
 		// configure to detect and act on function definitions
 		// these will stop further rule checking by returning false
-		pCompositionOpportunity = new CompositionOpportunity();	pPrintComposition = new PrintComposition(pRepo);
-		pCompositionOpportunity->addAction(pPrintComposition);	pParser->addRule(pCompositionOpportunity);
-		pUsingOpportunity = new UsingOpportunity();	pPrintUsing = new PrintUsing(pRepo);
-		pUsingOpportunity->addAction(pPrintUsing);	pParser->addRule(pUsingOpportunity);
+		//pCompositionOpportunity = new CompositionOpportunity();	pPrintComposition = new PrintComposition(pRepo);
+		//pCompositionOpportunity->addAction(pPrintComposition);	pParser->addRule(pCompositionOpportunity);
+		//pUsingOpportunity = new UsingOpportunity();	pPrintUsing = new PrintUsing(pRepo);
+		//pUsingOpportunity->addAction(pPrintUsing);	pParser->addRule(pUsingOpportunity);
 		pInheritanceOpportunity = new InheritanceOpportunity();	pPrintInheritance = new PrintInheritance(pRepo);
 		pInheritanceOpportunity->addAction(pPrintInheritance);	pParser->addRule(pInheritanceOpportunity);
-		pAggregationOpportunity = new AggregationOpportunity();	pPrintAggregation = new PrintAggregation(pRepo);
-		pAggregationOpportunity->addAction(pPrintAggregation);	pParser->addRule(pAggregationOpportunity);
+		//pAggregationOpportunity = new AggregationOpportunity();	pPrintAggregation = new PrintAggregation(pRepo);
+		//pAggregationOpportunity->addAction(pPrintAggregation);	pParser->addRule(pAggregationOpportunity);
+
+		//Project 2 configurations
+		pVarDeclaration = new VarDeclaration(pRepo);		pPushVarDecl = new PushVarDecl(pRepo);  
+		pVarDeclaration->addAction(pPushVarDecl);		pParser->addRule(pVarDeclaration);
+		pGlobalVarDeclaration = new GlobalVarDeclaration(pRepo);		pPushGlobalVarDecl = new PushGlobalVarDecl(pRepo);  
+		pGlobalVarDeclaration->addAction(pPushGlobalVarDecl);		pParser->addRule(pGlobalVarDeclaration);
 		return pParser;
 	}
 	catch(std::exception& ex)
 	{	std::cout << "\n\n  " << ex.what() << "\n\n";
-		return 0;
+	return 0;
 	}
 }
 

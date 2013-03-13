@@ -103,19 +103,27 @@ private:
 
 	// Relationships
 
-	CompositionOpportunity* pCompositionOpportunity;
-	PrintComposition* pPrintComposition;
+	//CompositionOpportunity* pCompositionOpportunity;
+	//PrintComposition* pPrintComposition;
 
-	UsingOpportunity* pUsingOpportunity;
-	PrintUsing* pPrintUsing;
+	//UsingOpportunity* pUsingOpportunity;
+	//PrintUsing* pPrintUsing;
 
 	InheritanceOpportunity* pInheritanceOpportunity;
 	PrintInheritance* pPrintInheritance;
 
-	AggregationOpportunity* pAggregationOpportunity;
-	PrintAggregation* pPrintAggregation;
+	//AggregationOpportunity* pAggregationOpportunity;
+	//PrintAggregation* pPrintAggregation;
 
 	// prohibit copies and assignments
+
+	// Project 2 rules
+
+	VarDeclaration* pVarDeclaration;
+	PushVarDecl* pPushVarDecl;
+
+	GlobalVarDeclaration* pGlobalVarDeclaration;
+	PushGlobalVarDecl* pPushGlobalVarDecl;
 
 	ConfigParseToConsoleRelat(const ConfigParseToConsoleRelat&);
 	ConfigParseToConsoleRelat& operator=(const ConfigParseToConsoleRelat&);
