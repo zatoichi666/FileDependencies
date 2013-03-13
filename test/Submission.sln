@@ -13,6 +13,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SemiExpression", "SemiExpre
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GraphSingleton", "GraphSingleton\GraphSingleton.vcxproj", "{283AE4D3-CB54-4F7F-B8DF-9C8A7C4EBD32}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "SymbolTable", "SymbolTable\SymbolTable.vcxproj", "{69EAEBF6-64C4-40AE-83A2-D05992886F47}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Win32 = Debug|Win32
@@ -43,6 +45,10 @@ Global
 		{283AE4D3-CB54-4F7F-B8DF-9C8A7C4EBD32}.Debug|Win32.Build.0 = Debug|Win32
 		{283AE4D3-CB54-4F7F-B8DF-9C8A7C4EBD32}.Release|Win32.ActiveCfg = Release|Win32
 		{283AE4D3-CB54-4F7F-B8DF-9C8A7C4EBD32}.Release|Win32.Build.0 = Release|Win32
+		{69EAEBF6-64C4-40AE-83A2-D05992886F47}.Debug|Win32.ActiveCfg = Debug|Win32
+		{69EAEBF6-64C4-40AE-83A2-D05992886F47}.Debug|Win32.Build.0 = Debug|Win32
+		{69EAEBF6-64C4-40AE-83A2-D05992886F47}.Release|Win32.ActiveCfg = Release|Win32
+		{69EAEBF6-64C4-40AE-83A2-D05992886F47}.Release|Win32.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

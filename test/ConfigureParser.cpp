@@ -87,13 +87,13 @@ Parser* ConfigParseToConsole::Build()
 	// these will stop further rule checking by returning false
 	pClassDefinition = new ClassDefinition;		pPushClass = new PushClass(pRepo); 
 	pClassDefinition->addAction(pPushClass);		pParser->addRule(pClassDefinition);
-	pEnumStatement = new EnumStatement();		pPrintEnum = new PrintEnum();		
+	pEnumStatement = new EnumStatement();		pPrintEnum = new PrintEnum(pRepo);		
 	pEnumStatement->addAction(pPrintEnum);		pParser->addRule(pEnumStatement);
 	pFunctionDefinition = new FunctionDefinition;		pPushFunction = new PushFunction(pRepo);  
 	pFunctionDefinition->addAction(pPushFunction);		pParser->addRule(pFunctionDefinition);
 	pStructDefinition = new StructDefinition;		pPushStruct = new PushStruct(pRepo);  
 	pStructDefinition->addAction(pPushStruct);		pParser->addRule(pStructDefinition);
-	pTypedefStatement = new TypedefStatement();		pPrintTypedef = new PrintTypedef();
+	pTypedefStatement = new TypedefStatement();		pPrintTypedef = new PrintTypedef(pRepo);
 	pTypedefStatement->addAction(pPrintTypedef);		pParser->addRule(pTypedefStatement);
 	pUnionDefinition = new UnionDefinition;		pPushUnion = new PushUnion(pRepo);  
 	pUnionDefinition->addAction(pPushUnion);		pParser->addRule(pUnionDefinition);

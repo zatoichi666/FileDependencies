@@ -71,6 +71,7 @@ ver 1.0 : 12 Jan 06
 #include "Tokenizer.h"
 #include "SemiExpression.h"
 #include "GraphSingleton.h"
+#include "SymbolTable.h"
 
 using namespace GraphLib;
 
@@ -107,11 +108,16 @@ class Repository  // application specific
 {
 	ScopeStack<element> stack;
 	Toker* p_Toker;
+	SymbolTable symb;
 public:
 	Repository(Toker* pToker)
 	{
 		p_Toker = pToker;
 	}
+	SymbolTable& symbolTable()
+	{
+		return symb;
+	}	
 	ScopeStack<element>& scopeStack()
 	{
 		return stack;
@@ -203,6 +209,7 @@ public:
 	}
 };
 
+/*
 ///////////////////////////////////////////////////////////////
 // rule to detect Composition relationships
 
@@ -293,7 +300,9 @@ public:
 		}
 	}
 };
+*/
 
+/*
 ///////////////////////////////////////////////////////////////
 // rule to detect Using relationships
 
@@ -374,6 +383,7 @@ public:
 	}
 
 };
+*/
 
 ///////////////////////////////////////////////////////////////
 // rule to detect Inheritance relationships
@@ -439,7 +449,7 @@ public:
 	}
 
 };
-
+/*
 ///////////////////////////////////////////////////////////////
 // rule to detect aggregation relationship
 
@@ -482,7 +492,6 @@ public:
 			//std::cout << "\n  Relationship: " + elem.name + " aggregates " + tc[len + 1];
 			// pop anonymous scope
 
-
 			GraphSingleton *s;
 			s = GraphSingleton::getInstance();
 
@@ -492,6 +501,7 @@ public:
 		}
 	}
 };
+*/
 
 ///////////////////////////////////////////////////////////////
 // rule to detect preprocessor statements
@@ -546,8 +556,13 @@ public:
 
 class PrintEnum : public IAction
 {
+	Repository* p_Repos;
 
 public:
+	PrintEnum(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
 
 	void doAction(ITokCollection*& pTc)
 	{
@@ -563,7 +578,10 @@ public:
 			enumName = tc[len + 1];
 
 		std::cout << "\n  Type detected: Enum: " << enumName << "\n";
-		s->addTypeToGraph(enumName);
+		s->addTypeToGraph(s->getCurrentFilename());
+
+		p_Repos->symbolTable().Add( enumName, "TBD", s->getCurrentFilename() );
+		
 
 	}
 };
@@ -588,11 +606,8 @@ public:
 		if (p_Repos->scopeStack().size() > 0)
 		{
 			element cacheElement = p_Repos->scopeStack().pop();
-			//
-
 			p_Repos->scopeStack().push(cacheElement);
 		}
-
 
 		ITokCollection& tc = *pTc;
 		size_t len = tc.find("enum");
@@ -613,7 +628,6 @@ public:
 		std::cout << ".";
 	}
 };
-
 
 ///////////////////////////////////////////////////////////////
 // rule to detect typedef statements
@@ -658,8 +672,13 @@ public:
 
 class PrintTypedef : public IAction
 {
-public:
+	Repository* p_Repos;
 
+public:
+	PrintTypedef(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
 	void doAction(ITokCollection*& pTc)
 	{
 		ITokCollection& tc = *pTc;
@@ -667,7 +686,9 @@ public:
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
 		std::cout << " \nTypedef detected, adding via pass 1: " << tc[posTypedef] << "\n";
-		s->addTypeToGraph(tc[posTypedef]);
+		s->addTypeToGraph(s->getCurrentFilename());
+
+		p_Repos->symbolTable().Add( tc[posTypedef], "TBD", s->getCurrentFilename() );
 
 	}
 };
@@ -781,7 +802,10 @@ public:
 
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
-		s->addTypeToGraph(name);
+		std::cout << " \nClass detected, adding via pass 1: " << name << "\n";
+		s->addTypeToGraph(s->getCurrentFilename());
+
+		p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
 	}
 
 };
@@ -868,7 +892,11 @@ public:
 
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
-		s->addTypeToGraph(name);
+		
+		std::cout << " \nStruct detected, adding via pass 1: " << name << "\n";
+		s->addTypeToGraph(s->getCurrentFilename());
+
+		p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
 	}
 };
 
@@ -896,7 +924,6 @@ public:
 		elem.name = name;
 		elem.lineCount = p_Repos->lineCount();
 		p_Repos->scopeStack().push(elem);
-		std::cout << "Here\n";
 	}
 };
 
@@ -953,7 +980,10 @@ public:
 
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
-		s->addTypeToGraph(name);
+		std::cout << " \nUnion detected, adding via pass 1: " << name << "\n";
+		s->addTypeToGraph(s->getCurrentFilename());
+
+		p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
 
 	}
 };
@@ -1084,6 +1114,8 @@ public:
 
 		std::string typeName = (*pTc)[0];
 		std::cout << "  Found var decl: " << typeName << "\n";
+
+		//p_Repos->symbolTable().lookUpFile(
 
 		/*
 		// push class/struct scope

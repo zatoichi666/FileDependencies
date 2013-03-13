@@ -94,7 +94,7 @@ void printOutGraph()
 	s = GraphSingleton::getInstance();
 	graph g;
 	g = s->getGraph();
-	
+
 	graphXml::printPrettyGraph(g);
 }
 
@@ -197,7 +197,12 @@ void processAFolderPass1(int argc, char* argv[], bool isRecursive, std::vector<s
 				std::cout << "\n\n  Parser not built\n\n";
 
 			}
-			std::cout << "\n Parsing file: " << *iterTxt << "\n";
+			std::cout << "\n Pass 1: Parsing file: " << *iterTxt << "\n";
+
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			s->setCurrentFilename(*iterTxt);
+
 			while(pParser->next())
 				pParser->parse();
 		}
@@ -213,12 +218,12 @@ void processAFolderPass2(int argc, char* argv[], bool isRecursive, std::vector<s
 	ConfigParseToConsoleRelat configure;
 	Parser* pParser;
 	pParser = configure.Build();
-	
+
 	for(std::vector<std::string>::iterator iterTxt = fileList.begin();
 		iterTxt != fileList.end();
 		++iterTxt)
 	{
-		
+
 		try
 		{
 			if(pParser)
@@ -233,7 +238,12 @@ void processAFolderPass2(int argc, char* argv[], bool isRecursive, std::vector<s
 			{
 				std::cout << "\n\n  Parser not built\n\n";
 			}
-			//std::cout << "\n Parsing file: " << *iterTxt << "\n";
+			std::cout << "\n Pass 2: Parsing file: " << *iterTxt << "\n";
+			
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			s->setCurrentFilename(*iterTxt);
+
 			while(pParser->next())
 				pParser->parse();
 		}
@@ -253,42 +263,42 @@ int main(int argc, char* argv[])
 		printUsage();
 	else if ((argc == 2))
 	{	cmdArg = argv[1];
-		if  ((cmdArg == "-h") || (cmdArg == "/?"))
-			printUsage();
-		else
-		{	if (Directory::exists(argv[1]))
-				std::cout << "No file extensions were provided to analyze in \\" << direct << "\n";
-			else
-				std::cout << "The specified directory doesn't exist.  \nPlease ensure the correct path is specified.\n\n";
-		}
+	if  ((cmdArg == "-h") || (cmdArg == "/?"))
+		printUsage();
+	else
+	{	if (Directory::exists(argv[1]))
+	std::cout << "No file extensions were provided to analyze in \\" << direct << "\n";
+	else
+		std::cout << "The specified directory doesn't exist.  \nPlease ensure the correct path is specified.\n\n";
+	}
 	}
 	if (argc >= 3)
 	{		cmdArg = argv[1];
-		if (cmdArg == "-R") {
-			std::vector<std::string> fileList = getFileListToParse( argc, argv, true);
-			processAFolderPass1(argc, argv, true, fileList); processAFolderPass2(argc, argv, true, fileList);
-			printOutGraph();demonstrateGraphSearch();
-			Directory::setCurrentDirectory(direct);
-			writeGraphXmlFile();
-		}
-		else if (cmdArg == "-G")
-		{	cmdArg = argv[2];
-			if (cmdArg.find(".xml") != std::string::npos)
-				readGraphXmlFile(argv[2]);
-			else
-				std::cout << "Invalid graph file specified.  Did you specify a .xml file?\n";
-		}
-		else {			
-			std::vector<std::string> fileList = getFileListToParse( argc, argv, false);
-			
-			processAFolderPass1(argc, argv, false, fileList); 
-			
-			processAFolderPass2(argc, argv, false, fileList);
-			
-			printOutGraph();demonstrateGraphSearch();
-			Directory::setCurrentDirectory(direct);
-			writeGraphXmlFile();
-		}
+	if (cmdArg == "-R") {
+		std::vector<std::string> fileList = getFileListToParse( argc, argv, true);
+		processAFolderPass1(argc, argv, true, fileList); processAFolderPass2(argc, argv, true, fileList);
+		printOutGraph();demonstrateGraphSearch();
+		Directory::setCurrentDirectory(direct);
+		writeGraphXmlFile();
+	}
+	else if (cmdArg == "-G")
+	{	cmdArg = argv[2];
+	if (cmdArg.find(".xml") != std::string::npos)
+		readGraphXmlFile(argv[2]);
+	else
+		std::cout << "Invalid graph file specified.  Did you specify a .xml file?\n";
+	}
+	else {			
+		std::vector<std::string> fileList = getFileListToParse( argc, argv, false);
+
+		processAFolderPass1(argc, argv, false, fileList); 
+
+		processAFolderPass2(argc, argv, false, fileList);
+
+		printOutGraph();demonstrateGraphSearch();
+		Directory::setCurrentDirectory(direct);
+		writeGraphXmlFile();
+	}
 	}
 	pressAKeyPrompt();
 	return 0;

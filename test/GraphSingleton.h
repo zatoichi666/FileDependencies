@@ -30,6 +30,7 @@ class GraphSingleton : public graph  // implements GraphSingleton shall(1)
 protected:
 	static bool instanceFlag;
 	static GraphSingleton* single;
+	std::string currentFilename;
 private:
 	GraphSingleton()
 	{
@@ -38,6 +39,14 @@ private:
 		single = NULL;
 	}
 public:
+	void setCurrentFilename(std::string fn)
+	{
+		currentFilename = fn;
+	}
+	std::string getCurrentFilename()
+	{
+		return currentFilename;
+	}
 	static GraphSingleton* getInstance()
 	{
 		if(! instanceFlag)
