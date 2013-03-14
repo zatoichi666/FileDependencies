@@ -73,7 +73,7 @@ private:
 	Toker* pToker;
 	SemiExp* pSemi;
 	Parser* pParser;
-	Repository* pRepo;
+	//Repository* pRepo;
 
 	// add folding rules
 

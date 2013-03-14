@@ -1,6 +1,6 @@
 ///////////////////////////////////////////////////////////////
 // Graph.cpp - Graph Library                                 //
-// Ver 1.1                                                   //
+// Ver 1.5                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Lenova ThinkPad E420s, Windows 7             //
 // Application: Help for CSE687 - OOD, Pr#1, Spring 2013     //
@@ -9,19 +9,25 @@
 ///////////////////////////////////////////////////////////////
 
 #include <iostream>
+#include <fstream>
 #include "Graph.h"
-
 using namespace GraphLib;
 
 typedef Graph<std::string, std::string> graph;
 typedef Vertex<std::string, std::string> vertex;
 typedef Display<std::string, std::string> display;
 
-template<typename V, typename E>
-void showVert(Vertex<V,E>& v)
+void showVert(Vertex<std::string, std::string>& v)
 {
   std::cout << "\n  " << v.id();
 }
+
+template<typename V, typename E>
+void TshowVert(Vertex<V,E>& v)
+{
+  std::cout << "\n  " << v.id();
+}
+
 #ifdef TEST_GRAPH
 
 int main()
@@ -81,13 +87,46 @@ int main()
       std::cout << verts[i].value().c_str() << " ";
     std::cout << "\n";
 
-    std::cout << "\n  Testing Depth First Search";
-    std::cout << "\n ----------------------------";
+    std::cout << "\n  Testing Depth First Search with function pointer";
+    std::cout << "\n --------------------------------------------------";
     for(auto& vert : g)
     {
       std::cout << "\n  starting at id " << vert.id();
-      g.dfs(vert, showVert);
+      g.dfs(vert, TshowVert<std::string, std::string>);
+      // this works too: 
+      // g.dfs(vert, showVert);
     }
+    std::cout << "\n";
+
+    std::cout << "\n  Testing Depth First Search with Functor";
+    std::cout << "\n -----------------------------------------";
+
+    class showFunctor
+    {
+    public:
+      void operator()(Vertex<std::string, std::string>& vert)
+      {
+        std::cout << "\n  From functor: vertix id = " << vert.id();
+        std::cout << ", number of edges = " << vert.size();
+      }
+    };
+
+    g.dfs(g[0], showFunctor());
+    std::cout << "\n";
+
+    std::cout << "\n  Testing Serialization to XML";
+    std::cout << "\n ------------------------------";
+    std::string str = GraphToXmlString(g);
+    std::cout << str << "\n";
+    std::ofstream out("testGraph.xml");
+    out << str << "\n";
+
+    std::cout << "\n  Testing Graph construction from XML";
+    std::cout << "\n -------------------------------------";
+    graph gtest;
+    GraphFromXmlString(gtest, str);
+    display::show(gtest);
+    std::cout << "\n\n";
   }
   catch(std::exception& ex)
   {

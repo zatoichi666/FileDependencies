@@ -42,13 +42,13 @@ typedef Vertex<node, std::string> vertex;
 typedef Display<node, std::string> display;
 typedef GraphXml<node, std::string> graphXml;
 typedef TarjanAlgorithm<node, std::string> tarjanAlgorithm;
-
+typedef TopoSort<node, std::string> topoSort;
 
 
 template<typename V, typename E>
 void showVert(Vertex<V,E>& v)
 {
-	std::cout << "\n  " << v.id();
+	std::cout << "\n  " << v.value().payload;
 }
 
 
@@ -136,24 +136,23 @@ int main()
 	gGraph = graphXml::readXml(rdr);
 	display::show(gGraph);
 	// GraphXml shall(3) provide the Tarjan algorithm            //
-// on graph instances.                                       //
+	// on graph instances.                                       //
 	std::cout << "\n\n Testing GraphXml shall(3) provide the Tarjan algorithm \n";
 	std::cout << " on graph instances.  ";       
 	std::cout << "\n\n Expected result: 3 strongly connected components.\n";
 	std::cout << "---------------------------------------------------\n";
-	
+
 	tarjanAlgorithm tarjObj;
 
 	std::cout << " Actual result: " << tarjObj.tarjan(gGraph).size() << " strongly connected components.\n";	
 
-	std::cout << "\n\n Testing GraphXml shall(4) perform a topological sort on strongly connected components. \n";
 	std::cout << " GraphXml shall(5) condense the sorted (4) SCCs into a new directed graph \n";
-	
+
 	std::cout << "\n Expected result: non-cyclic graph\n";
 	std::cout << " 1 -> 0\n";
 	std::cout << " 2 -> 1\n";
 	std::cout << " 2 -> 0\n";
-	
+
 	std::cout << " Demonstrating condensedGraph()\n";
 	std::cout << "--------------------------------\n";
 	graph g3 = graphXml::condensedGraph(tarjObj.getSCC(),gGraph);
@@ -165,6 +164,75 @@ int main()
 	std::cout << "  SCC 0: " << graphXml::collapseSccIntoString( tarjObj.getSCC()[0] ) << "\n";
 	std::cout << "  SCC 1: " << graphXml::collapseSccIntoString( tarjObj.getSCC()[1] ) << "\n";
 	std::cout << "  SCC 2: " << graphXml::collapseSccIntoString( tarjObj.getSCC()[2] ) << "\n";
+
+	std::cout << "\n\n Testing GraphXml shall(4) perform a topological sort on strongly connected components. \n";
+
+	
+	topoSort topoObj;
+	topoObj.topoSort(g3);
+
+
+	std::cout << "\n\n Demonstrating TopoSort on the condensed graph resulting from the above.\n";
+	std::cout << "----------------------------\n";
+	std::cout << "  Sorted Graph: Vertex 0: " << topoObj.getTopoSortList()[0].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 1: " << topoObj.getTopoSortList()[1].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 2: " << topoObj.getTopoSortList()[2].value().payload  << "\n";
+	
+	topoSort topoObj2;
+	graph topoGraph2;
+
+	node n2("a");
+	vertex a2(n2);
+	n2.payload = "b";
+	vertex b2(n2);
+	n2.payload = "c";
+	vertex c2(n2);
+	n2.payload = "d";
+	vertex d2(n2);
+	n2.payload = "e";
+	vertex e2(n2);
+	n2.payload = "f";
+	vertex f2(n2);
+	n2.payload = "g";
+	vertex g2(n2);
+	n2.payload = "h";
+	vertex h2(n2);
+
+	topoGraph2.addVertex(a2);
+	topoGraph2.addVertex(b2);
+	topoGraph2.addVertex(c2);
+	topoGraph2.addVertex(d2);
+	topoGraph2.addVertex(e2);
+	topoGraph2.addVertex(f2);
+	topoGraph2.addVertex(g2);
+	topoGraph2.addVertex(h2);
+
+	topoGraph2.addEdge("0", a2, b2);
+	topoGraph2.addEdge("1", a2, c2);
+	topoGraph2.addEdge("2", b2, d2);
+	topoGraph2.addEdge("3", b2, f2);
+	topoGraph2.addEdge("4", c2, f2);
+	topoGraph2.addEdge("5", c2, e2);
+	topoGraph2.addEdge("6", g2, e2);
+	topoGraph2.addEdge("7", g2, h2);
+
+	std::cout << "Showing the 8-node a-cyclical graph\n";
+	std::cout << "-----------------------------------\n";
+	display::show(topoGraph2);
+	std::cout << "\n";
+
+	topoObj2.topoSort(topoGraph2);
+	std::cout << "\n\n Demonstrating TopoSort on an 8-node a-cyclical graph.\n";
+	std::cout << "----------------------------\n";
+	std::cout << "  Sorted Graph: Vertex 0: " << topoObj2.getTopoSortList()[0].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 1: " << topoObj2.getTopoSortList()[1].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 2: " << topoObj2.getTopoSortList()[2].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 3: " << topoObj2.getTopoSortList()[3].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 4: " << topoObj2.getTopoSortList()[4].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 5: " << topoObj2.getTopoSortList()[5].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 6: " << topoObj2.getTopoSortList()[6].value().payload  << "\n";
+	std::cout << "  Sorted Graph: Vertex 7: " << topoObj2.getTopoSortList()[7].value().payload  << "\n";
+
 
 	return 0;
 }

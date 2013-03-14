@@ -58,6 +58,8 @@ ver 1.0 : 12 Jan 06
 ///////////////////////////////////////////////////////////////
 // build parser that writes its output to console
 
+
+
 class ConfigParseToConsole : IBuilder
 {
 public:
@@ -73,7 +75,7 @@ private:
 	Toker* pToker;
 	SemiExp* pSemi;
 	Parser* pParser;
-	Repository* pRepo;
+	//Repository* pRepo;
 
 	// add folding rules
 
@@ -110,7 +112,9 @@ private:
 	UnionDefinition* pUnionDefinition;
 	PushUnion* pPushUnion;
 
-
+	//Project 2 pointers
+	GlobalFunctionDefinition* pGlobalFunctionDefinition;
+	PushGlobalFunction* pPushGlobalFunction;
 
 	// prohibit copies and assignments
 

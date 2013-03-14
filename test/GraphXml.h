@@ -1,4 +1,4 @@
-///////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////
 // GraphXml.h - Graph Library                                //
 // Ver 2.0                                                   //
 // Language:    Visual C++ 2012                              //
@@ -42,11 +42,19 @@
 
 using namespace GraphLib;
 
+typedef enum
+{
+	unvisited,
+	temporary,
+	permanent
+} marking;
+
 struct node
 {
 	std::string payload;
 	size_t lowIndex;
 	size_t index;
+	marking mark;
 
 	std::string c_str()
 	{
@@ -64,6 +72,7 @@ struct node
 		payload = str;
 		lowIndex = SIZE_MAX;
 		index = SIZE_MAX;
+		mark = unvisited;
 
 	}
 
@@ -119,7 +128,12 @@ private:
 		}
 	}
 
+
 public:
+
+
+
+
 	static graph condensedGraph(std::vector<std::vector<vertex>>& stronglyConnectedComponents, graph& fullGraph )
 	{
 		graph condensedGraph;
@@ -310,6 +324,9 @@ public:
 	}
 };
 
+
+
+
 template<typename V, typename E> 
 class TarjanAlgorithm : public Graph<V,E> 
 {
@@ -320,8 +337,6 @@ class TarjanAlgorithm : public Graph<V,E>
 	std::vector<vertex> Stk;
 	std::vector<std::vector<vertex>> stronglyConnectedComponents;
 	graph dg;
-
-
 
 	void strongConnect(vertex v)
 	{
@@ -390,8 +405,76 @@ public:
 		}
 		return stronglyConnectedComponents;
 	}
+};
 
 
+
+template<typename V, typename E> 
+class TopoSort : public Graph<V,E> 
+{
+	typedef Graph<V,E> graph;
+	typedef Vertex<V,E> vertex;
+
+	graph dg;
+
+	//http://en.wikipedia.org/wiki/Topological_sorting
+	std::vector<vertex> topoSortList;
+
+	void visit(vertex v)
+	{		
+		if (v.value().mark == temporary)
+		{
+			std::cout << "\n\n (!!!) TopoSort: Stopping, not a DAG (!!!) \n";
+		}
+		else if (v.value().mark == unvisited)
+		{
+			dg[dg.findVertexIndexById(v.id())].value().mark = temporary;
+			for (size_t i=0;i<v.size();i++)
+			{
+				vertex::Edge edge = v[i];
+				vertex child = dg[edge.first];
+				visit(child);
+			}
+			dg[dg.findVertexIndexById(v.id())].value().mark = permanent;
+			topoSortList.push_back(v);
+		}
+
+	}
+
+	vertex findUnmarkedNode(int& ret)
+	{
+		ret = 0;
+		for (auto vert: dg)
+		{
+			if (vert.value().mark != permanent)
+			{
+				ret++;
+				return dg[dg.findVertexIndexById(vert.id())];
+			}
+		}
+		//all vertices are marked permanent
+		node terminatorNode("terminator");
+		vertex terminator(terminatorNode);
+		return terminator;
+	}
+
+public:
+	std::vector<vertex> getTopoSortList()
+	{
+		return topoSortList;
+	}
+	void topoSort(graph g)
+	{
+		dg = g;
+		int ret = 0;
+		vertex v = findUnmarkedNode(ret);
+		while (ret > 0)
+		{
+			v = findUnmarkedNode(ret);
+			if (v.value().payload != "terminator")
+				visit(v);
+		}
+	}
 
 };
 

@@ -22,6 +22,8 @@
 #include "ActionsAndRules.h"
 #include "ConfigureParser.h"
 
+Repository* pRepo;
+
 //----< destructor releases all parts >------------------------------
 
 ConfigParseToConsole::~ConfigParseToConsole()
@@ -45,13 +47,14 @@ ConfigParseToConsole::~ConfigParseToConsole()
 	delete pUnionDefinition;
 	delete pPushUnion;
 	delete pFR;
-	delete pRepo;
+	//delete pRepo;
 	delete pParser;
 	delete pSemi;
 	delete pToker;
 
 }
 //----< attach toker to a file stream or stringstream >------------
+
 
 bool ConfigParseToConsole::Attach(const std::string& name, bool isFile)
 {
@@ -69,7 +72,9 @@ Parser* ConfigParseToConsole::Build()
 	pSemi = new SemiExp(pToker);
 	pSemi->returnNewLines(false);
 	pParser = new Parser(pSemi);
+	
 	pRepo = new Repository(pToker);
+
 	// add code folding rules
 	pFR = new codeFoldingRules;
 	pParser->addFoldingRules(pFR);
@@ -97,9 +102,11 @@ Parser* ConfigParseToConsole::Build()
 	pTypedefStatement->addAction(pPrintTypedef);		pParser->addRule(pTypedefStatement);
 	pUnionDefinition = new UnionDefinition;		pPushUnion = new PushUnion(pRepo);  
 	pUnionDefinition->addAction(pPushUnion);		pParser->addRule(pUnionDefinition);
-
-
 	
+	//Project 2 pointers
+	pGlobalFunctionDefinition = new GlobalFunctionDefinition(pRepo);		pPushGlobalFunction = new PushGlobalFunction(pRepo);  
+	pGlobalFunctionDefinition->addAction(pPushGlobalFunction);		pParser->addRule(pGlobalFunctionDefinition);
+
 	return pParser;
 }
 catch(std::exception& ex)

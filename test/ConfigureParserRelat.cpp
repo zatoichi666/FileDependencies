@@ -22,13 +22,15 @@
 #include "ActionsAndRules.h"
 #include "ConfigureParserRelat.h"
 
+extern Repository* pRepo;
+
 //----< destructor releases all parts >------------------------------
 
 ConfigParseToConsoleRelat::~ConfigParseToConsoleRelat()
 {
 	// when Builder goes out of scope, everything must be deallocated
 	delete pFR;
-	delete pRepo;
+	//delete pRepo;
 	delete pParser;
 	delete pSemi;
 	delete pToker;
@@ -59,6 +61,8 @@ ConfigParseToConsoleRelat::~ConfigParseToConsoleRelat()
 }
 //----< attach toker to a file stream or stringstream >------------
 
+
+
 bool ConfigParseToConsoleRelat::Attach(const std::string& name, bool isFile)
 {
 	if(pToker == 0)
@@ -76,7 +80,7 @@ Parser* ConfigParseToConsoleRelat::Build()
 		pSemi = new SemiExp(pToker);
 		pSemi->returnNewLines(false);
 		pParser = new Parser(pSemi);
-		pRepo = new Repository(pToker);
+		//pRepo = new Repository(pToker);
 
 		// add code folding rules
 		pFR = new codeFoldingRules;

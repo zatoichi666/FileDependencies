@@ -209,181 +209,7 @@ public:
 	}
 };
 
-/*
-///////////////////////////////////////////////////////////////
-// rule to detect Composition relationships
 
-class CompositionOpportunity : public IRule
-{
-public:
-	bool isSpecialKeyWord(const std::string& tok)
-	{
-		const static std::string keys[]	= { "#", "(", ")", "{", "}", "return", "+", "-", "*", "&", 
-			"ios", "ios_base", "istream", "iostream", "ostream","streambuf", "ifstream", "fstream", 
-			"ofstream", "filebuf", "bool", "char", "int", "float", "double", "void", "wchar_t", 
-			"long", "<<", ">>", "enum", "struct", "class", "=", "unordered_map", "vector", "size_t",
-			"string", "list"
-		};
-		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
-			if(tok == keys[i])
-				return true;
-		return false;
-	}
-	bool containsSpecialKeyword(ITokCollection& tc)
-	{
-		for (int i=0;i<(int)tc.length();i++)
-			if (isSpecialKeyWord(tc[i]))
-				return true;
-		return false;
-	}
-
-	bool doTest(ITokCollection*& pTc)
-	{
-		ITokCollection& tc = *pTc;
-		if ( !containsSpecialKeyword(tc) && (tc.length() > 2) )
-		{
-			//std::cout << "\n--Composition relationship rule";
-			doActions(pTc);
-			return true;
-		}
-		return false;
-	}
-};
-
-///////////////////////////////////////////////////////////////
-// action to print Composition relationship to console
-
-class PrintComposition : public IAction
-{
-	Repository* p_Repos;
-public:
-	PrintComposition(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	void doAction(ITokCollection*& pTc)
-	{
-
-		if(p_Repos->scopeStack().size() == 0)
-			return;
-
-		element elem = p_Repos->scopeStack().pop(); // reverts the scopeStack, leaving a local copy
-		p_Repos->scopeStack().push(elem);           // called elem, in lieu of a peek() function
-
-		if((elem.type == "class") || (elem.type == "struct") )
-		{
-			ITokCollection& tc = *pTc;
-			ITokCollection& tc_copy = *pTc;
-			size_t lastScopeRes = tc_copy.find("::");
-			while (tc_copy.find("::") != tc_copy.length())
-			{
-				lastScopeRes = tc_copy.find("::");
-				tc_copy[lastScopeRes] = "-";
-			}
-			size_t keyPosComposes;
-			if (lastScopeRes < tc.length())
-			{
-				keyPosComposes = lastScopeRes + 1;
-			}
-			else
-			{
-				keyPosComposes = tc.find(",") - 2;
-				if (tc.find(",") == tc.length())
-					keyPosComposes = tc.find(";") - 2;
-			}
-			//std::cout << "\n  Relationship: " << elem.name << " composes " << tc[keyPosComposes] << " len:" << tc.length();
-			GraphSingleton *s;
-			s = GraphSingleton::getInstance();
-
-			s->addRelationshipToGraph(elem.name, tc[keyPosComposes], "composes");
-
-		}
-	}
-};
-*/
-
-/*
-///////////////////////////////////////////////////////////////
-// rule to detect Using relationships
-
-class UsingOpportunity : public IRule
-{
-public:
-	bool isStdDatatype(const std::string& tok)
-	{
-		const static std::string keys[]
-		= {  "ios", "ios_base", "istream", "iostream", "ostream","streambuf", "ifstream", "fstream", 
-			"ofstream", "filebuf", "bool", "char", "int", "float", "double", "void", "wchar_t", 
-			"long", "string"
-		};
-		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
-			if(tok == keys[i])
-				return true;
-		return false;
-	}
-
-	bool doTest(ITokCollection*& pTc)
-	{
-		ITokCollection& tc = *pTc;
-		size_t keyPosClosedParen = tc.find(")");
-		size_t keyPosOpenParen = tc.find("(");	
-		size_t keyPosUsing = tc.find("*") > tc.find("&") ? tc.find("&") : tc.find("*");
-
-		if ((keyPosClosedParen < tc.length()) && (keyPosUsing < tc.length()) && 
-			(keyPosOpenParen < tc.length()) && (keyPosUsing > keyPosOpenParen) && 
-			(keyPosClosedParen > keyPosUsing) && !isStdDatatype(tc[keyPosUsing-1])) 
-		{
-			//std::cout << "\n--Using relationship rule";
-			doActions(pTc);
-			return false;
-		}
-		return false;
-	}
-};
-
-///////////////////////////////////////////////////////////////
-// action to print Using relationship to console
-
-class PrintUsing : public IAction
-{
-	Repository* p_Repos;
-
-public:
-	PrintUsing(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	void doAction(ITokCollection*& pTc)
-	{
-
-		if(p_Repos->scopeStack().size() == 0)
-			return;
-		//back up the scopestack
-		ScopeStack<element> tempStack = p_Repos->scopeStack();
-		element elem = p_Repos->scopeStack().pop();
-		while ((elem.type != "class") && (p_Repos->scopeStack().size() > 0))
-		{
-			elem = p_Repos->scopeStack().pop();
-		}
-		if(elem.type == "class")
-		{
-			ITokCollection& tc = *pTc;
-			size_t keyPosUsing = tc.find("*") > tc.find("&") ? tc.find("&") : tc.find("*");
-			std::cout << "\n  Relationship: " << elem.name << " uses " << tc[keyPosUsing - 1];
-
-			GraphSingleton *s;
-			s = GraphSingleton::getInstance();
-
-			if (elem.name != tc[keyPosUsing - 1]) // In case of preventing compiler assignment, copy, or destr.
-				s->addRelationshipToGraph(elem.name, tc[keyPosUsing - 1], "uses");
-
-		}
-		p_Repos->scopeStack() = tempStack;
-
-	}
-
-};
-*/
 
 ///////////////////////////////////////////////////////////////
 // rule to detect Inheritance relationships
@@ -449,59 +275,7 @@ public:
 	}
 
 };
-/*
-///////////////////////////////////////////////////////////////
-// rule to detect aggregation relationship
 
-class AggregationOpportunity : public IRule
-{
-public:
-	bool doTest(ITokCollection*& pTc)
-	{
-		if(pTc->find("new") < pTc->length())
-		{
-			doActions(pTc);
-			return true;
-		}
-		return false;
-	}
-};
-
-///////////////////////////////////////////////////////////////
-// action to print aggregation relationship to console
-
-class PrintAggregation : public IAction
-{
-	Repository* p_Repos;
-public:
-	PrintAggregation(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	void doAction(ITokCollection*& pTc)
-	{
-		if(p_Repos->scopeStack().size() == 0)
-			return;
-		element elem = p_Repos->scopeStack().pop();
-		p_Repos->scopeStack().push(elem);  // leaves the scopestack uneffected
-
-		if((elem.type == "class") || (elem.type == "struct"))
-		{
-			ITokCollection& tc = *pTc;
-			size_t len = tc.find("new");
-			//std::cout << "\n  Relationship: " + elem.name + " aggregates " + tc[len + 1];
-			// pop anonymous scope
-
-			GraphSingleton *s;
-			s = GraphSingleton::getInstance();
-
-			s->addRelationshipToGraph(elem.name,tc[len + 1],"aggregates");
-
-			//Do addEdge
-		}
-	}
-};
-*/
 
 ///////////////////////////////////////////////////////////////
 // rule to detect preprocessor statements
@@ -581,7 +355,7 @@ public:
 		s->addTypeToGraph(s->getCurrentFilename());
 
 		p_Repos->symbolTable().Add( enumName, "TBD", s->getCurrentFilename() );
-		
+
 
 	}
 };
@@ -690,6 +464,81 @@ public:
 
 		p_Repos->symbolTable().Add( tc[posTypedef], "TBD", s->getCurrentFilename() );
 
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// rule to detect function definitions
+
+class GlobalFunctionDefinition : public IRule
+{
+	Repository* p_Repos;
+public:
+	GlobalFunctionDefinition(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
+	bool isSpecialKeyWord(const std::string& tok)
+	{
+		const static std::string keys[]
+		= { "for", "while", "switch", "if", "catch" };
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		if(tc[tc.length()-1] == "{")
+		{
+			size_t len = tc.find("(");
+			if(len < tc.length() && !isSpecialKeyWord(tc[len-1]))
+			{
+
+				if (p_Repos->scopeStack().size() == 1)
+				{
+					ScopeStack<element> tempStack = p_Repos->scopeStack();
+					element elem = tempStack.pop();
+					if ((elem.type == "function") && (elem.name != "main"))
+					{
+						//std::cout << "\n--FunctionDefinition rule";
+						doActions(pTc);
+						return true;
+					}
+
+				}
+
+
+			}
+		}
+		return false;
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// action to push function name onto ScopeStack
+
+class PushGlobalFunction : public IAction
+{
+	Repository* p_Repos;
+public:
+	PushGlobalFunction(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		std::string name = (*pTc)[pTc->find("(") - 1];
+		GraphSingleton *s;
+		s = GraphSingleton::getInstance();
+		// Add the file to the graph
+		s->addTypeToGraph(s->getCurrentFilename());
+
+		// add the type to the SymbolTable if it isn't already there (which would cause a compilation error)
+		if (!p_Repos->symbolTable().containsType(name))
+			p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
 	}
 };
 
@@ -892,7 +741,7 @@ public:
 
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
-		
+
 		std::cout << " \nStruct detected, adding via pass 1: " << name << "\n";
 		s->addTypeToGraph(s->getCurrentFilename());
 
@@ -1082,9 +931,16 @@ public:
 				if (tempStack.size() > 0)
 				{
 
-					//std::cout << "\n--VarDeclaration rule";
-					doActions(pTc);
-					return true;
+					if (tc.find("=") > 1)
+					{
+
+						if (p_Repos->symbolTable().containsType(tc[0]))
+						{
+						//std::cout << "\n--VarDeclaration rule";
+						doActions(pTc);
+						return true;
+						}
+					}
 
 				}
 			}
@@ -1113,7 +969,15 @@ public:
 		ScopeStack<element> tempStack = p_Repos->scopeStack();
 
 		std::string typeName = (*pTc)[0];
-		std::cout << "  Found var decl: " << typeName << "\n";
+		std::cout << "  Found var of type: " << typeName;
+
+
+		if (p_Repos->symbolTable().containsType(typeName))
+		{
+			std::string varName = (*pTc)[pTc->find("=") - 1];
+			std::cout << " and name:" << varName << "\n";
+
+		}
 
 		//p_Repos->symbolTable().lookUpFile(
 
