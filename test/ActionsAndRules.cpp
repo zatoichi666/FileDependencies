@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////
-// ActionsAndRules.cpp - Graph Library                       //
+// ActionsAndRules.cpp                                       //
 // Ver 2.0                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Dell E6510, Windows 7                        //

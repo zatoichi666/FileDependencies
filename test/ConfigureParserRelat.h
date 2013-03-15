@@ -101,23 +101,9 @@ private:
 	StructDefinition* pStructDefinition;
 	StructScope* pStructScope;
 
-	// Relationships
-
-	//CompositionOpportunity* pCompositionOpportunity;
-	//PrintComposition* pPrintComposition;
-
-	//UsingOpportunity* pUsingOpportunity;
-	//PrintUsing* pPrintUsing;
-
+	// Project 2 rules
 	InheritanceOpportunity* pInheritanceOpportunity;
 	PrintInheritance* pPrintInheritance;
-
-	//AggregationOpportunity* pAggregationOpportunity;
-	//PrintAggregation* pPrintAggregation;
-
-	// prohibit copies and assignments
-
-	// Project 2 rules
 
 	VarDeclaration* pVarDeclaration;
 	PushVarDecl* pPushVarDecl;
@@ -125,6 +111,17 @@ private:
 	GlobalVarDeclaration* pGlobalVarDeclaration;
 	PushGlobalVarDecl* pPushGlobalVarDecl;
 
+	GlobalFuncCall* pGlobalFuncCall;
+	PushGlobalFuncCall* pPushGlobalFuncCall;
+
+	ReturnType* pReturnType;
+	PushReturnType* pPushReturnType;
+
+	CallingParam* pCallingParam;
+	PushCallingParam* pPushCallingParam;
+
+
+	// prohibit copies and assignments
 	ConfigParseToConsoleRelat(const ConfigParseToConsoleRelat&);
 	ConfigParseToConsoleRelat& operator=(const ConfigParseToConsoleRelat&);
 };

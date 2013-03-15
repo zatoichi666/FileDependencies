@@ -62,6 +62,8 @@ ver 2.0 : 12 Feb 13
 
 typedef Display<node, std::string> display;
 typedef GraphXml<node, std::string> graphXml;
+typedef TarjanAlgorithm<node, std::string> tarjanAlgorithm;
+typedef TopoSort<node, std::string> topoSort;
 
 #ifdef TEST_EXEC
 
@@ -172,6 +174,30 @@ void demonstrateGraphSearch()
 	std::cout << "\n";
 }
 
+void demonstrateGraphCondenseAndTopoSort()
+{
+	GraphSingleton *s;
+	s = GraphSingleton::getInstance();
+	graph gGraph;
+	gGraph = s->getGraph();
+	std::cout << "\n\nDemonstrating graph condense \n";
+	std::cout << "_________________________________\n";
+	tarjanAlgorithm tarjObj;
+	std::cout << " Condensed graph: " << tarjObj.tarjan(gGraph).size() << " strongly connected components.\n";	
+	graph condensedGraph = graphXml::condensedGraph(tarjObj.getSCC(),gGraph);
+	display::show(condensedGraph);
+	std::cout << "\n\nDemonstrating TopoSort on the condensed graph resulting from the above.\n";
+	std::cout << "____________________________________________________________________________\n";
+	topoSort topoObj;
+	topoObj.topoSort(condensedGraph);
+	
+	for (size_t i=0; i<topoObj.getTopoSortList().size();i++)
+	{
+		std::cout << "  Sorted Graph: Vertex [" << i << "] = " << topoObj.getTopoSortList()[i].value().payload  << "\n";
+	}
+
+}
+
 void processAFolderPass1(int argc, char* argv[], bool isRecursive, std::vector<std::string> fileList)
 {
 	ConfigParseToConsole configure;
@@ -277,7 +303,7 @@ int main(int argc, char* argv[])
 	if (cmdArg == "-R") {
 		std::vector<std::string> fileList = getFileListToParse( argc, argv, true);
 		processAFolderPass1(argc, argv, true, fileList); processAFolderPass2(argc, argv, true, fileList);
-		printOutGraph();demonstrateGraphSearch();
+		printOutGraph();demonstrateGraphCondenseAndTopoSort();
 		Directory::setCurrentDirectory(direct);
 		writeGraphXmlFile();
 	}
@@ -290,12 +316,9 @@ int main(int argc, char* argv[])
 	}
 	else {			
 		std::vector<std::string> fileList = getFileListToParse( argc, argv, false);
-
 		processAFolderPass1(argc, argv, false, fileList); 
-
 		processAFolderPass2(argc, argv, false, fileList);
-
-		printOutGraph();demonstrateGraphSearch();
+		printOutGraph();demonstrateGraphCondenseAndTopoSort();
 		Directory::setCurrentDirectory(direct);
 		writeGraphXmlFile();
 	}

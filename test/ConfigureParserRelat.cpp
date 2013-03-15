@@ -80,15 +80,12 @@ Parser* ConfigParseToConsoleRelat::Build()
 		pSemi = new SemiExp(pToker);
 		pSemi->returnNewLines(false);
 		pParser = new Parser(pSemi);
-		//pRepo = new Repository(pToker);
 
 		// add code folding rules
 		pFR = new codeFoldingRules;
 		pParser->addFoldingRules(pFR);
 
 		// configure to manage scope
-		// these must come first - they return true on match
-		// so rule checking continues
 		pBeginningOfScope = new BeginningOfScope();	pHandlePush = new HandlePush(pRepo);
 		pBeginningOfScope->addAction(pHandlePush);	pParser->addRule(pBeginningOfScope);
 		pEndOfScope = new EndOfScope();	pHandlePop = new HandlePop(pRepo);
@@ -104,20 +101,17 @@ Parser* ConfigParseToConsoleRelat::Build()
 		pStructDefinition = new StructDefinition;	pStructScope = new StructScope(pRepo);  
 		pStructDefinition->addAction(pStructScope);	pParser->addRule(pStructDefinition);
 
-		// configure to detect and act on function definitions
-		// these will stop further rule checking by returning false
-		//pCompositionOpportunity = new CompositionOpportunity();	pPrintComposition = new PrintComposition(pRepo);
-		//pCompositionOpportunity->addAction(pPrintComposition);	pParser->addRule(pCompositionOpportunity);
-		//pUsingOpportunity = new UsingOpportunity();	pPrintUsing = new PrintUsing(pRepo);
-		//pUsingOpportunity->addAction(pPrintUsing);	pParser->addRule(pUsingOpportunity);
-		pInheritanceOpportunity = new InheritanceOpportunity();	pPrintInheritance = new PrintInheritance(pRepo);
-		pInheritanceOpportunity->addAction(pPrintInheritance);	pParser->addRule(pInheritanceOpportunity);
-		//pAggregationOpportunity = new AggregationOpportunity();	pPrintAggregation = new PrintAggregation(pRepo);
-		//pAggregationOpportunity->addAction(pPrintAggregation);	pParser->addRule(pAggregationOpportunity);
-
-		//Project 2 configurations
+		//Project 2 configurations (Rules 3.a. through 3.e.)
 		pVarDeclaration = new VarDeclaration(pRepo);		pPushVarDecl = new PushVarDecl(pRepo);  
 		pVarDeclaration->addAction(pPushVarDecl);		pParser->addRule(pVarDeclaration);
+		pReturnType = new ReturnType(pRepo);		pPushReturnType = new PushReturnType(pRepo);  
+		pReturnType->addAction(pPushReturnType);		pParser->addRule(pReturnType);
+		pCallingParam = new CallingParam(pRepo);		pPushCallingParam = new PushCallingParam(pRepo);  
+		pCallingParam->addAction(pPushCallingParam);		pParser->addRule(pCallingParam);		
+		pInheritanceOpportunity = new InheritanceOpportunity();	pPrintInheritance = new PrintInheritance(pRepo);
+		pInheritanceOpportunity->addAction(pPrintInheritance);	pParser->addRule(pInheritanceOpportunity);				
+		pGlobalFuncCall = new GlobalFuncCall(pRepo);		pPushGlobalFuncCall = new PushGlobalFuncCall(pRepo);  
+		pGlobalFuncCall->addAction(pPushGlobalFuncCall);		pParser->addRule(pGlobalFuncCall);		
 		pGlobalVarDeclaration = new GlobalVarDeclaration(pRepo);		pPushGlobalVarDecl = new PushGlobalVarDecl(pRepo);  
 		pGlobalVarDeclaration->addAction(pPushGlobalVarDecl);		pParser->addRule(pGlobalVarDeclaration);
 		return pParser;

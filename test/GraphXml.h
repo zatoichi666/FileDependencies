@@ -131,9 +131,6 @@ private:
 
 public:
 
-
-
-
 	static graph condensedGraph(std::vector<std::vector<vertex>>& stronglyConnectedComponents, graph& fullGraph )
 	{
 		graph condensedGraph;
@@ -258,18 +255,23 @@ public:
 				std::string child = g[edge.first].value().payload;
 				std::string relationship = (edge.second);
 
-				if (relationship == "uses")
-					relationship = "--------uses------>";
+				if (relationship == "variable")
+					relationship = "V----variable------>";
 
-				if (relationship == "aggregates")
-					relationship = "<>---aggregates----";
+				if (relationship == "globalVar")
+					relationship = "GV---globalVar----->";
 
-				if (relationship == "composes")
-					relationship = "<>----composes-----";
+				if (relationship == "globalFun")
+					relationship = "GF---globalFun----->";
 
 				if (relationship == "inherits")
-					relationship = "<|----inherits-----";
+					relationship = "<|----inherits------";
+				
+				if (relationship == "retType")
+					relationship = "RT/P---retType----->";
 
+				if (relationship == "param")
+					relationship = "RT/P---param------->";
 
 				std::cout << std::setw(30) << "";
 				std::cout << std::setw(30) << relationship;
@@ -406,8 +408,6 @@ public:
 		return stronglyConnectedComponents;
 	}
 };
-
-
 
 template<typename V, typename E> 
 class TopoSort : public Graph<V,E> 

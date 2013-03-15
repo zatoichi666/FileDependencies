@@ -1,7 +1,7 @@
 #ifndef ACTIONSANDRULES_H
 #define ACTIONSANDRULES_H
 ///////////////////////////////////////////////////////////////
-// ActionsAndRules.h - Graph Library                          //
+// ActionsAndRules.h                                         //
 // Ver 2.0                                                   //
 // Language:    Visual C++ 2012                              //
 // Platform:    Dell E6510, Windows 7                        //
@@ -209,10 +209,296 @@ public:
 	}
 };
 
+///////////////////////////////////////////////////////////////
+//                    Pass 2 Classes                         //
+///////////////////////////////////////////////////////////////
+// Rule 3.a. to detect variable declarations
+
+class VarDeclaration : public IRule
+{
+
+	Repository* p_Repos;
+
+
+public:
+	VarDeclaration(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
+	bool isSpecialKeyWord(const std::string& tok)
+	{
+		const static std::string keys[]
+		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", 
+			"continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", 
+			"export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", 
+			"mutable", "namespace", "new", "operator", "private", "protected", "public", "register", 
+			"reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
+			"switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", 
+			"unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{", "#"	};
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+
+	bool containsSpecialKeyword(ITokCollection& tc)
+	{
+		for (int i=0;i<(int)tc.length();i++)
+			if (isSpecialKeyWord(tc[i]))
+				return true;
+		return false;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("{");
+		if (tc.find("//") == tc.length())
+		{
+			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
+			{
+				ScopeStack<element> tempStack = p_Repos->scopeStack();
+				if (tempStack.size() > 0)
+				{
+					if (tc.find("=") > 1)
+					{
+						if ( (p_Repos->symbolTable().containsType(tc[0])) && (tc[1] != "("))
+						{
+							//std::cout << "\n--VarDeclaration rule";
+							doActions(pTc);
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;	
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// action to push Variable Declaration name onto ScopeStack
+
+class PushVarDecl : public IAction
+{
+	Repository* p_Repos;
+
+
+public:
+	PushVarDecl(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+		std::string typeName = (*pTc)[0];
+		if (p_Repos->symbolTable().containsType(typeName))
+		{
+			std::cout << "  Rule 3.a: Found var of type: " << typeName << "\n";
+
+			// Add the edge to the graph if the path of the type != the path of the instance
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+
+			std::string child = p_Repos->symbolTable().lookUpFile(typeName,"TBD");
+			std::string parent = s->reducePathFileToFileNamePrefix(s->getCurrentFilename());
+			s->addRelationshipToGraph(parent, child, "variable");
+		}
+	}
+};
+
 
 
 ///////////////////////////////////////////////////////////////
-// rule to detect Inheritance relationships
+// Rule 3.b.i. to detect return types instances
+
+class ReturnType : public IRule
+{
+	Repository* p_Repos;
+
+public:
+	ReturnType(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("(");
+		if (len < tc.length()) // if token collection contains an open paren
+		{
+			if (tc.find(";") == tc.length()) // and token collection doesn't contain a semicolon (is a function declaration)
+			{
+				if (len >= 2)
+				{
+					if ( p_Repos->symbolTable().containsType(tc[tc.find("(") - 2]) ) // Is the return type in the symbolTable?
+					{
+						//std::cout << "Found a return type from a function declaration in the SymbolTable\n";
+						//std::cout << "\n--VarDeclaration rule";
+						doActions(pTc);
+						return true;
+					}
+				}
+			}
+		}
+		return false;	
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// action to push return type instances onto ScopeStack
+
+class PushReturnType : public IAction
+{
+	Repository* p_Repos;
+
+
+public:
+	PushReturnType(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+		std::string funName = (*pTc)[pTc->find("(") - 1];
+		bool foundRetType = false;
+		if (pTc->find("::") < pTc->length()) // Scope resolution operator is present
+		{
+			if (pTc->find("::") > 1)
+			{
+				funName = (*pTc)[pTc->find("::") - 2]; 
+				foundRetType = true;
+			}
+		}
+		else if (pTc->find("(") < pTc->length())
+		{
+			if (pTc->find("(") > 1)
+			{
+				funName = (*pTc)[pTc->find("(") - 2]; 
+				foundRetType = true;
+			}
+		}
+
+		if (foundRetType)
+		{
+			if (p_Repos->symbolTable().containsType(funName)) // This is a return type from the SymbolTable
+			{
+				std::cout << "  Rule 3.b: return type: " << funName << "\n";
+				// Add the edge to the graph if the path of the type != the path of the instance
+				GraphSingleton *s;
+				s = GraphSingleton::getInstance();
+				std::string child = p_Repos->symbolTable().lookUpFile(funName,"TBD");
+				std::string parent = s->reducePathFileToFileNamePrefix(s->getCurrentFilename());
+				s->addRelationshipToGraph(parent, child, "retType");
+			}
+		}
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// Rule 3.b.ii to detect calling parameter instances
+
+class CallingParam : public IRule
+{
+	Repository* p_Repos;
+
+public:
+	CallingParam(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("(");
+		if (len < tc.length()) // if token collection contains an open paren
+		{
+			if (tc.find(";") == tc.length()) // and token collection doesn't contain a semicolon (is a function declaration)
+			{
+
+				for (size_t i=tc.find("(")+1;i<tc.length();i++)
+				{
+					if (p_Repos->symbolTable().containsType(tc[i])) // Look through the token collection for a match in the symbolTable
+					{
+						std::cout << "Found a calling param from a function declaration in the SymbolTable\n";
+						//std::cout << "\n--VarDeclaration rule";
+						doActions(pTc);
+						return true;
+					}
+				}
+			}
+		}
+		return false;	
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// action to push calling parameter instances onto ScopeStack
+
+class PushCallingParam : public IAction
+{
+	Repository* p_Repos;
+
+
+public:
+	PushCallingParam(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+		std::string funName = (*pTc)[pTc->find("(") - 1];
+		bool foundRetType = false;
+
+		if (pTc->find("(") < pTc->length())
+		{
+			if (pTc->find("(") > 1) 
+			{// look in here for calling parameters
+
+				for (size_t i=pTc->find("(")+1;i<pTc->length();i++)
+				{
+					if (p_Repos->symbolTable().containsType((*pTc)[i])) // Look through the token collection for a match in the symbolTable
+					{
+						std::cout << "Found a calling param from a function declaration in the SymbolTable\n";
+						//std::cout << "\n--VarDeclaration rule";
+						funName = (*pTc)[i]; 
+						foundRetType = true;
+					}
+				}
+			}
+		}
+
+		if (foundRetType)
+		{
+			if (p_Repos->symbolTable().containsType(funName)) // This is a return type from the SymbolTable
+			{
+				std::cout << "  Rule 3.b: calling parameter: " << funName << "\n";
+				// Add the edge to the graph if the path of the type != the path of the instance
+				GraphSingleton *s;
+				s = GraphSingleton::getInstance();
+				std::string child = p_Repos->symbolTable().lookUpFile(funName,"TBD");
+				std::string parent = s->reducePathFileToFileNamePrefix(s->getCurrentFilename());
+				s->addRelationshipToGraph(parent, child, "param");
+			}
+		}
+
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// Rule 3.c to detect Inheritance relationships
 
 class InheritanceOpportunity : public IRule
 {
@@ -243,8 +529,6 @@ class PrintInheritance : public IAction
 {
 	Repository* p_Repos;
 
-
-
 public:
 	PrintInheritance(Repository* pRepos)
 	{
@@ -252,6 +536,9 @@ public:
 	}
 	void doAction(ITokCollection*& pTc)
 	{
+
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+
 		if(p_Repos->scopeStack().size() == 0)
 			return;
 		element elem = p_Repos->scopeStack().pop();
@@ -266,15 +553,200 @@ public:
 			else
 				posInherits--;
 
-		//std::cout << "\n  Relationship: " << tc[posInheritor] << " inherits " << tc[posInherits];
+		std::string typeName = (*pTc)[0];
+		if (p_Repos->symbolTable().containsType(tc[posInherits]))
+		{
+			std::cout << "  Rule 3.c: Found " << tc[posInheritor] << " inheriting type: " << tc[posInherits] << "\n";
 
-		GraphSingleton *s;
-		s = GraphSingleton::getInstance();
+			// Add the edge to the graph if the path of the type != the path of the instance
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			std::string parent = p_Repos->symbolTable().lookUpFile(tc[posInherits],"TBD");
+			std::string child = s->reducePathFileToFileNamePrefix(s->getCurrentFilename());
+			s->addRelationshipToGraph(parent, child, "inherits");			
+		}
+	}
+};
 
-		s->addRelationshipToGraph(tc[posInherits], tc[posInheritor], "inherits");
+///////////////////////////////////////////////////////////////
+// Rule 3.d. to detect global function calls
+
+class GlobalFuncCall : public IRule
+{
+	Repository* p_Repos;
+
+public:
+	GlobalFuncCall(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("(");
+
+		if (len < tc.length()) // if token collection contains an open paren
+			if (tc.find(";") < tc.length()) // and token collection ends with a semicolon
+			{
+				ScopeStack<element> tempStack = p_Repos->scopeStack();
+				if (tempStack.size() > 0)			
+					if (tempStack.pop().type == "function")		// and inside function scope				
+						if ( p_Repos->symbolTable().containsType(tc[len-1]) ) // Look for the global variable name
+						{
+							//std::cout << "\n--VarDeclaration rule";
+							doActions(pTc);
+							return true;
+						}
+
+			}
+			return false;	
 	}
 
 };
+
+
+///////////////////////////////////////////////////////////////
+// action to push Global Function Calls onto ScopeStack
+
+class PushGlobalFuncCall : public IAction
+{
+	Repository* p_Repos;
+
+public:
+	PushGlobalFuncCall(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+		std::string funName = (*pTc)[pTc->find("(") - 1];
+		if (p_Repos->symbolTable().containsType(funName))
+		{
+			std::cout << "  Rule 3.d: Found global function call: " << funName << "()\n";
+			// Add the edge to the graph if the path of the type != the path of the instance
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			std::string child = p_Repos->symbolTable().lookUpFile(funName,"TBD");
+			std::string parent = s->reducePathFileToFileNamePrefix(s->getCurrentFilename());
+			s->addRelationshipToGraph(parent, child, "globalFun");
+		}
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// Rule 3.e. to detect global variable declarations
+
+class GlobalVarDeclaration : public IRule
+{
+	Repository* p_Repos;
+
+public:
+	GlobalVarDeclaration(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	bool isSpecialKeyWord(const std::string& tok)
+	{
+		const static std::string keys[]
+		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", 
+			"continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", 
+			"export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", 
+			"mutable", "namespace", "new", "operator", "private", "protected", "public", "register", 
+			"reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
+			"switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", 
+			"unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{", "#"	};
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+
+	bool containsSpecialKeyword(ITokCollection& tc)
+	{
+		for (int i=0;i<(int)tc.length();i++)
+			if (isSpecialKeyWord(tc[i]))
+				return true;
+		return false;
+	}
+
+public:
+
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		size_t len = tc.find("{");
+		//if (tc.find("//") == tc.length())
+		{
+			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
+			{
+				ScopeStack<element> tempStack = p_Repos->scopeStack();
+				if (tempStack.size() == 0)
+				{
+					//std::cout << "\n--VarDeclaration rule";
+					doActions(pTc);
+					return true;
+				}
+			}
+		}
+		return false;	
+	}
+
+};
+
+///////////////////////////////////////////////////////////////
+// action to push Global Variable Declaration name onto ScopeStack
+
+class PushGlobalVarDecl : public IAction
+{
+	Repository* p_Repos;
+
+
+public:
+	PushGlobalVarDecl(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		ScopeStack<element> tempStack = p_Repos->scopeStack();
+
+		std::string typeName = (*pTc)[0];
+		if (p_Repos->symbolTable().containsType(typeName))
+		{
+			std::cout << "  Rule 3.e: Found Globalvar of type: " << typeName;
+			// If not an assignment, should just be 'type var;'
+			if (pTc->find("=") == (*pTc).length())
+			{
+				std::string varName = (*pTc)[pTc->find(";") - 1];
+				std::cout << " and name:" << varName << "\n";
+			}
+			else
+			{
+				std::string varName = (*pTc)[pTc->find("=") - 1];
+				std::cout << " and name:" << varName << "\n";
+			}
+			// Add the edge to the graph if the path of the type != the path of the instance
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			std::string child = p_Repos->symbolTable().lookUpFile(typeName,"TBD");
+			std::string parent = s->reducePathFileToFileNamePrefix(s->getCurrentFilename());
+			s->addRelationshipToGraph(parent, child, "globalVar");
+		}
+	}
+};
+
+
+///////////////////////////////////////////////////////////////
+//               End of Pass 2 Classes                       //
+///////////////////////////////////////////////////////////////
+
+///////////////////////////////////////////////////////////////
+//                      Pass 1 Classes                       //
+///////////////////////////////////////////////////////////////
 
 
 ///////////////////////////////////////////////////////////////
@@ -306,6 +778,85 @@ public:
 		//std::cout << "\n\n  Type detected: Preprocessor: " << pTc->show().c_str();
 	}
 };
+
+///////////////////////////////////////////////////////////////
+// Rule 3.d to detect global function definitions (not calls)
+
+class GlobalFunctionDefinition : public IRule
+{
+	Repository* p_Repos;
+public:
+	GlobalFunctionDefinition(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+
+	bool isSpecialKeyWord(const std::string& tok)
+	{
+		const static std::string keys[]
+		= { "for", "while", "switch", "if", "catch" };
+		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
+			if(tok == keys[i])
+				return true;
+		return false;
+	}
+	bool doTest(ITokCollection*& pTc)
+	{
+		ITokCollection& tc = *pTc;
+		if(tc[tc.length()-1] == "{")
+		{
+			size_t len = tc.find("(");
+			if(len < tc.length() && !isSpecialKeyWord(tc[len-1]))
+			{
+
+				if (p_Repos->scopeStack().size() == 1)
+				{
+					ScopeStack<element> tempStack = p_Repos->scopeStack();
+					element elem = tempStack.pop();
+					if ((elem.type == "function") && (elem.name != "main"))
+					{
+						//std::cout << "\n--FunctionDefinition rule";
+						doActions(pTc);
+						return true;
+					}
+
+				}
+
+			}
+		}
+		return false;
+	}
+};
+
+///////////////////////////////////////////////////////////////
+// action to push function name onto ScopeStack
+
+class PushGlobalFunction : public IAction
+{
+	Repository* p_Repos;
+public:
+	PushGlobalFunction(Repository* pRepos)
+	{
+		p_Repos = pRepos;
+	}
+	void doAction(ITokCollection*& pTc)
+	{
+		std::string name = (*pTc)[pTc->find("(") - 1];
+
+		// add the type to the SymbolTable if it isn't already there (which would cause a compilation error)
+		if (!p_Repos->symbolTable().containsType(name))
+		{
+			std::cout << "Glb func detected, adding " << name << "() via pass 1 to the symbol table\n";
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			// Add the file to the graph
+			s->addTypeToGraph(s->reducePathFileToFileNamePrefix(s->getCurrentFilename()));
+			p_Repos->symbolTable().Add( name, "TBD", s->reducePathFileToFileNamePrefix(s->getCurrentFilename()) );
+		}
+	}
+};
+
+
 
 ///////////////////////////////////////////////////////////////
 // rule to detect enum statements
@@ -352,9 +903,9 @@ public:
 			enumName = tc[len + 1];
 
 		std::cout << "\n  Type detected: Enum: " << enumName << "\n";
-		s->addTypeToGraph(s->getCurrentFilename());
+		s->addTypeToGraph(s->reducePathFileToFileNamePrefix(s->getCurrentFilename()));
 
-		p_Repos->symbolTable().Add( enumName, "TBD", s->getCurrentFilename() );
+		p_Repos->symbolTable().Add( enumName, "TBD", s->reducePathFileToFileNamePrefix(s->getCurrentFilename()) );
 
 
 	}
@@ -460,87 +1011,13 @@ public:
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
 		std::cout << " \nTypedef detected, adding via pass 1: " << tc[posTypedef] << "\n";
-		s->addTypeToGraph(s->getCurrentFilename());
+		s->addTypeToGraph(s->reducePathFileToFileNamePrefix(s->getCurrentFilename()));
 
-		p_Repos->symbolTable().Add( tc[posTypedef], "TBD", s->getCurrentFilename() );
+		p_Repos->symbolTable().Add( tc[posTypedef], "TBD", s->reducePathFileToFileNamePrefix(s->getCurrentFilename()) );
 
 	}
 };
 
-///////////////////////////////////////////////////////////////
-// rule to detect function definitions
-
-class GlobalFunctionDefinition : public IRule
-{
-	Repository* p_Repos;
-public:
-	GlobalFunctionDefinition(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-
-	bool isSpecialKeyWord(const std::string& tok)
-	{
-		const static std::string keys[]
-		= { "for", "while", "switch", "if", "catch" };
-		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
-			if(tok == keys[i])
-				return true;
-		return false;
-	}
-	bool doTest(ITokCollection*& pTc)
-	{
-		ITokCollection& tc = *pTc;
-		if(tc[tc.length()-1] == "{")
-		{
-			size_t len = tc.find("(");
-			if(len < tc.length() && !isSpecialKeyWord(tc[len-1]))
-			{
-
-				if (p_Repos->scopeStack().size() == 1)
-				{
-					ScopeStack<element> tempStack = p_Repos->scopeStack();
-					element elem = tempStack.pop();
-					if ((elem.type == "function") && (elem.name != "main"))
-					{
-						//std::cout << "\n--FunctionDefinition rule";
-						doActions(pTc);
-						return true;
-					}
-
-				}
-
-
-			}
-		}
-		return false;
-	}
-};
-
-///////////////////////////////////////////////////////////////
-// action to push function name onto ScopeStack
-
-class PushGlobalFunction : public IAction
-{
-	Repository* p_Repos;
-public:
-	PushGlobalFunction(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	void doAction(ITokCollection*& pTc)
-	{
-		std::string name = (*pTc)[pTc->find("(") - 1];
-		GraphSingleton *s;
-		s = GraphSingleton::getInstance();
-		// Add the file to the graph
-		s->addTypeToGraph(s->getCurrentFilename());
-
-		// add the type to the SymbolTable if it isn't already there (which would cause a compilation error)
-		if (!p_Repos->symbolTable().containsType(name))
-			p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
-	}
-};
 
 ///////////////////////////////////////////////////////////////
 // rule to detect function definitions
@@ -574,6 +1051,19 @@ public:
 	}
 };
 
+///////////////////////////////////////////////////////////////
+// action to send semi-expression that starts a function def
+// to console
+
+class PrintFunction : public IAction
+{
+public:
+	void doAction(ITokCollection*& pTc)
+	{
+		std::cout << "\n\n  FuncDef Stmt: " << pTc->show().c_str();
+	}
+};
+
 ///////////////////////////////////////////////////////////////
 // action to push function name onto ScopeStack
 
@@ -652,9 +1142,9 @@ public:
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
 		std::cout << " \nClass detected, adding via pass 1: " << name << "\n";
-		s->addTypeToGraph(s->getCurrentFilename());
+		s->addTypeToGraph(s->reducePathFileToFileNamePrefix(s->getCurrentFilename()));
 
-		p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
+		p_Repos->symbolTable().Add( name, "TBD", s->reducePathFileToFileNamePrefix(s->getCurrentFilename()) );
 	}
 
 };
@@ -720,7 +1210,6 @@ class PushStruct : public IAction
 {
 	Repository* p_Repos;
 
-
 public:
 	PushStruct(Repository* pRepos)
 	{
@@ -743,9 +1232,9 @@ public:
 		s = GraphSingleton::getInstance();
 
 		std::cout << " \nStruct detected, adding via pass 1: " << name << "\n";
-		s->addTypeToGraph(s->getCurrentFilename());
+		s->addTypeToGraph(s->reducePathFileToFileNamePrefix(s->getCurrentFilename()));
 
-		p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
+		p_Repos->symbolTable().Add( name, "TBD", s->reducePathFileToFileNamePrefix(s->getCurrentFilename()) );
 	}
 };
 
@@ -808,7 +1297,6 @@ class PushUnion : public IAction
 {
 	Repository* p_Repos;
 
-
 public:
 	PushUnion(Repository* pRepos)
 	{
@@ -830,9 +1318,9 @@ public:
 		GraphSingleton *s;
 		s = GraphSingleton::getInstance();
 		std::cout << " \nUnion detected, adding via pass 1: " << name << "\n";
-		s->addTypeToGraph(s->getCurrentFilename());
+		s->addTypeToGraph(s->reducePathFileToFileNamePrefix(s->getCurrentFilename()));
 
-		p_Repos->symbolTable().Add( name, "TBD", s->getCurrentFilename() );
+		p_Repos->symbolTable().Add( name, "TBD", s->reducePathFileToFileNamePrefix(s->getCurrentFilename()) );
 
 	}
 };
@@ -865,242 +1353,11 @@ public:
 	}
 };
 
-///////////////////////////////////////////////////////////////
-// action to send semi-expression that starts a function def
-// to console
-
-class PrintFunction : public IAction
-{
-public:
-	void doAction(ITokCollection*& pTc)
-	{
-		std::cout << "\n\n  FuncDef Stmt: " << pTc->show().c_str();
-	}
-};
-
-///////////////////////////////////////////////////////////////
-// rule to detect variable declarations
-
-class VarDeclaration : public IRule
-{
-
-	Repository* p_Repos;
-
-
-public:
-	VarDeclaration(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-
-	bool isSpecialKeyWord(const std::string& tok)
-	{
-		const static std::string keys[]
-		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", 
-			"continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", 
-			"export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", 
-			"mutable", "namespace", "new", "operator", "private", "protected", "public", "register", 
-			"reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
-			"switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", 
-			"unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{", "#"	};
-		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
-			if(tok == keys[i])
-				return true;
-		return false;
-	}
-
-	bool containsSpecialKeyword(ITokCollection& tc)
-	{
-		for (int i=0;i<(int)tc.length();i++)
-			if (isSpecialKeyWord(tc[i]))
-				return true;
-		return false;
-	}
-
-public:
-
-	bool doTest(ITokCollection*& pTc)
-	{
-		ITokCollection& tc = *pTc;
-		size_t len = tc.find("{");
-		if (tc.find("//") == tc.length())
-		{
-			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
-			{
-				ScopeStack<element> tempStack = p_Repos->scopeStack();
-				if (tempStack.size() > 0)
-				{
-
-					if (tc.find("=") > 1)
-					{
-
-						if (p_Repos->symbolTable().containsType(tc[0]))
-						{
-						//std::cout << "\n--VarDeclaration rule";
-						doActions(pTc);
-						return true;
-						}
-					}
-
-				}
-			}
-		}
-		return false;	
-	}
-
-};
 
 
 ///////////////////////////////////////////////////////////////
-// action to push Variable Declaration name onto ScopeStack
-
-class PushVarDecl : public IAction
-{
-	Repository* p_Repos;
-
-
-public:
-	PushVarDecl(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	void doAction(ITokCollection*& pTc)
-	{
-		ScopeStack<element> tempStack = p_Repos->scopeStack();
-
-		std::string typeName = (*pTc)[0];
-		std::cout << "  Found var of type: " << typeName;
-
-
-		if (p_Repos->symbolTable().containsType(typeName))
-		{
-			std::string varName = (*pTc)[pTc->find("=") - 1];
-			std::cout << " and name:" << varName << "\n";
-
-		}
-
-		//p_Repos->symbolTable().lookUpFile(
-
-		/*
-		// push class/struct scope
-		std::string name = (*pTc)[pTc->find("union") + 1];
-		element elem;
-		elem.type = "union";
-		elem.name = name;
-		elem.lineCount = p_Repos->lineCount();
-		p_Repos->scopeStack().push(elem);
-
-		GraphSingleton *s;
-		s = GraphSingleton::getInstance();
-		s->addTypeToGraph(name);
-		*/
-	}
-};
-
+//               End of Pass 2 Classes                       //
 ///////////////////////////////////////////////////////////////
-// rule to detect global variable declarations
-
-class GlobalVarDeclaration : public IRule
-{
-	Repository* p_Repos;
-
-public:
-	GlobalVarDeclaration(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	bool isSpecialKeyWord(const std::string& tok)
-	{
-		const static std::string keys[]
-		= { "asm", "auto", "bool", "break", "case", "catch", "char", "class", "const", "const_cast", 
-			"continue", "default", "delete", "do", "double", "dynamic_cast", "else", "enum", "explicit", 
-			"export", "extern", "false", "float", "for", "friend", "goto", "if", "inline", "int", "long", 
-			"mutable", "namespace", "new", "operator", "private", "protected", "public", "register", 
-			"reinterpret_cast", "return", "short", "signed", "sizeof", "static", "static_cast", "struct", 
-			"switch", "template", "this", "throw", "true", "try", "typedef", "typeid", "typename", "union", 
-			"unsigned", "using", "virtual", "void", "volatile", "wchar_t", "while", "}", "{", "#"	};
-		for(int i=0; i<(sizeof(keys) / sizeof(keys[0])); ++i)
-			if(tok == keys[i])
-				return true;
-		return false;
-	}
-
-	bool containsSpecialKeyword(ITokCollection& tc)
-	{
-		for (int i=0;i<(int)tc.length();i++)
-			if (isSpecialKeyWord(tc[i]))
-				return true;
-		return false;
-	}
-
-public:
-
-	bool doTest(ITokCollection*& pTc)
-	{
-		ITokCollection& tc = *pTc;
-		size_t len = tc.find("{");
-		//if (tc.find("//") == tc.length())
-		{
-			if ((tc.length() == len) && (tc.length() > 2) && (!containsSpecialKeyword(tc)))
-			{
-				ScopeStack<element> tempStack = p_Repos->scopeStack();
-				if (tempStack.size() == 0)
-				{
-					//std::cout << "\n--VarDeclaration rule";
-					doActions(pTc);
-					return true;
-				}
-			}
-		}
-		return false;	
-	}
-
-};
-
-
-///////////////////////////////////////////////////////////////
-// action to push Variable Declaration name onto ScopeStack
-
-class PushGlobalVarDecl : public IAction
-{
-	Repository* p_Repos;
-
-
-public:
-	PushGlobalVarDecl(Repository* pRepos)
-	{
-		p_Repos = pRepos;
-	}
-	void doAction(ITokCollection*& pTc)
-	{
-
-		ScopeStack<element> tempStack = p_Repos->scopeStack();
-
-		if (tempStack.size() == 0)
-		{
-
-			std::string typeName = (*pTc)[0];
-			std::cout << "  Found global var decl: " << typeName << "\n";
-
-		}
-		/*
-		// pop anonymous scope
-		p_Repos->scopeStack().pop();
-
-		// push class/struct scope
-		std::string name = (*pTc)[pTc->find("union") + 1];
-		element elem;
-		elem.type = "union";
-		elem.name = name;
-		elem.lineCount = p_Repos->lineCount();
-		p_Repos->scopeStack().push(elem);
-
-		GraphSingleton *s;
-		s = GraphSingleton::getInstance();
-		s->addTypeToGraph(name);
-		*/
-	}
-};
 
 
 ///////////////////////////////////////////////////////////////

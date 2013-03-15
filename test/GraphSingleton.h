@@ -113,6 +113,34 @@ public:
 		}
 	}
 
+	bool GraphSingleton::doesEdgeExistByIds(size_t parentId, size_t childId)
+	{
+		graph g = single->getGraph();
+		graph::iterator iter = g.begin();
+		bool parentFound;
+
+		while(iter != g.end())
+		{
+			vertex v = *iter;
+			std::string parent;
+			parent = v.value().payload;
+
+			parentFound = (v.id() == parentId);
+
+			for (size_t i=0; i<v.size(); ++i)
+			{
+				vertex::Edge edge = v[i];
+				std::string child = g[edge.first].value().payload;
+				std::string relationship = (edge.second);
+				if ((parentFound == true) && (g[edge.first].id() == childId )) 
+					return true;
+			}
+			++iter;
+		}
+		return false;
+	}
+
+
 	size_t GraphSingleton::addTypeToGraph(std::string vertName)
 	{
 		bool foundVert = false;
@@ -137,47 +165,63 @@ public:
 
 	void GraphSingleton::addRelationshipToGraph(std::string parentName, std::string childName, std::string relationship_s)
 	{
-		GraphSingleton *s;
-		s = GraphSingleton::getInstance();
-		graph g = s->getGraph();
-
-		bool foundParent = false;
-		size_t idParent;
-		bool foundChild = false;
-		size_t idChild;
-
-		for(auto& vert : s->getGraph())
+		if (parentName != childName)
 		{
-			if (vert.value() == parentName)
+			GraphSingleton *s;
+			s = GraphSingleton::getInstance();
+			graph g = s->getGraph();
+
+			bool foundParent = false;
+			size_t idParent;
+			bool foundChild = false;
+			size_t idChild;
+
+			for(auto& vert : s->getGraph())
 			{
-				foundParent = true;
-				idParent = vert.id();
+				if (vert.value() == parentName)
+				{
+					foundParent = true;
+					idParent = vert.id();
+				}
+			}
+
+			if (foundParent == false)
+				idParent = s->addTypeToGraph(parentName);
+
+			for(auto& vert : s->getGraph())
+			{
+				if (vert.value() == childName)
+				{
+					foundChild = true;
+					idChild = vert.id();
+				}
+			}
+
+			if (foundChild == false)
+				idChild = s->addTypeToGraph(childName);
+
+			bool edgeFound = false;
+			for (size_t i=0; i<s->getGraph()[s->getGraph().findVertexIndexById(idParent)].size();i++)
+				if (s->getGraph()[i].id() == idChild)
+					edgeFound = true;
+
+			if (!s->doesEdgeExistByIds(idParent, idChild))
+			{
+				s->addEdge(
+					relationship_s, 
+					s->getGraph()[s->getGraph().findVertexIndexById(idParent)], 
+					s->getGraph()[s->getGraph().findVertexIndexById(idChild)]	);
 			}
 		}
-		if (foundParent == false)
-		{
-			idParent = s->addTypeToGraph(parentName);
-		}
-
-		for(auto& vert : s->getGraph())
-		{
-			if (vert.value() == childName)
-			{
-				foundChild = true;
-				idChild = vert.id();
-			}
-		}
-		if (foundChild == false)
-		{
-			
-			idChild = s->addTypeToGraph(childName);
-
-		}
-		s->addEdge(
-			relationship_s, 
-			s->getGraph()[s->getGraph().findVertexIndexById(idParent)], 
-			s->getGraph()[s->getGraph().findVertexIndexById(idChild)]	);
 	}
+
+	std::string GraphSingleton::reducePathFileToFileNamePrefix(std::string pathFile)
+	{
+		size_t endPos = pathFile.find_last_of(".");
+		size_t startPos = pathFile.find_last_of("\\") + 1;
+		return pathFile.substr(startPos, endPos - startPos);
+	}
+
 };
 
 #endif
